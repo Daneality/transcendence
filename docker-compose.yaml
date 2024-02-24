@@ -1,0 +1,51 @@
+version: '3.8'
+services:
+  backend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: trans_backend
+    command: sh -c "python3 ./backend/manage.py migrate --noinput && python ./backend/manage.py runserver 0.0.0.0:8000"
+    restart: always
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+
+  # db:
+  #   image: mysql:latest
+  #   restart: always
+  #   environment:
+  #     MYSQL_DATABASE: admin
+  #     # MYSQL_USER: root
+  #     # MYSQL_PASSWORD: root
+  #     MYSQL_ROOT_PASSWORD: root
+  #   volumes:
+  #     - .dbdata:/var/lib/mysql
+  #   ports:
+  #     - "3306:3306"
+
+  db:
+    image: postgres
+    restart: always
+    # set shared memory limit when using docker-compose
+    #shm_size: 128mb
+    # or set shared memory limit when deploy via swarm stack
+    #volumes:
+    #  - type: tmpfs
+    #    target: /dev/shm
+    #    tmpfs:
+    #      size: 134217728 # 128*2^20 bytes = 128Mb
+    volumes:
+        - .dbdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: admin
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+        - "5432:5432"
