@@ -49,3 +49,11 @@ services:
       PGDATA: /var/lib/postgresql/data/pgdata
     ports:
         - "5432:5432"
+
+# volumes:
+#   dbdata:
+#     driver: local # Define the driver and options under the volume name
+#     driver_opts:
+#       type: none
+#       device: /data/db_data
+#       o: bind
