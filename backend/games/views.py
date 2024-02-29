@@ -5,8 +5,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework import generics
-from django.contrib.auth.models import User
-from games.serializers import UserSerializer
 from rest_framework import permissions
 
 
@@ -60,14 +58,6 @@ class GameDetail(APIView):
         snippet.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
-class UserList(generics.ListAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-
-
-class UserDetail(generics.RetrieveAPIView):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
 
 
 # class GameList(generics.ListCreateAPIView):
