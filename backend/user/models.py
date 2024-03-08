@@ -10,5 +10,5 @@ class Profile(models.Model):
     games_won = models.PositiveIntegerField(default=0)
     friends = models.ManyToManyField(User, related_name='friends')
     blocked_users = models.ManyToManyField(User, related_name='blocked_users')
-    #image = models.ImageField(upload_to='images/')
+    image = models.ImageField(upload_to='images/')
     #tournament = models.ForeignKey(Tournament, on_delete=models.SET_NULL, null=True, blank=True, related_name='players')

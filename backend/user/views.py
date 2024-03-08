@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
 from .serializers import RegisterSerializer
+from django.shortcuts import get_object_or_404
+from .serializers import ProfileSerializer
 
 
 # Create your views here.
@@ -16,9 +18,27 @@ class UserList(generics.ListAPIView):
     serializer_class = UserSerializer
 
 
-class UserDetail(generics.RetrieveAPIView):
+class UserDetail(generics.RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def get_object(self):
+        return get_object_or_404(User, pk=self.kwargs.get('pk'))
+
+    def update(self, request, *args, **kwargs):
+        user = self.get_object()
+        serializer = self.get_serializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            if 'image' in request.FILES:
+                profile_serializer = ProfileSerializer(user.profile, data={'image': request.FILES['image']}, partial=True)
+                if profile_serializer.is_valid():
+                    profile_serializer.save()
+                else:
+                    return Response(profile_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
 
 
 class RegisterAPIView(APIView):

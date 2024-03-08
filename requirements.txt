@@ -4,4 +4,5 @@ django-cors-headers
 psycopg
 channels
 channels-redis
-daphne 
+daphne
+Pillow

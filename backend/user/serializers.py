@@ -40,10 +40,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class ProfileSerializer(serializers.ModelSerializer):
     games = serializers.SerializerMethodField()
-
+    image = serializers.ImageField(max_length=None, use_url=True)
     class Meta:
         model = Profile
-        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games']
+        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image']
 
     def get_games(self, obj):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True).data
