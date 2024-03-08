@@ -10,6 +10,7 @@ class Game(models.Model):
     winner = models.PositiveIntegerField()
     player1 = models.ForeignKey(User, related_name='games_as_player1', on_delete=models.CASCADE)
     player2 = models.ForeignKey(User, related_name='games_as_player2', on_delete=models.CASCADE)
+    
 
     class Meta:
         ordering = ['created']
