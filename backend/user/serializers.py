@@ -34,7 +34,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2', None) # Remove the password2 field
         user = get_user_model().objects.create_user(**validated_data)
-        Profile.objects.create(user=user, games_lost=0, games_won=0, friends=[], blocked_user=[])
+        Profile.objects.create(user=user, games_lost=0, games_won=0)
         return user
 
 
@@ -43,7 +43,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['games_lost', 'games_won', 'friends', 'blocked_user', 'games']
+        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games']
 
     def get_games(self, obj):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True).data
