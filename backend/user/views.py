@@ -78,6 +78,11 @@ class FriendRequestListCreate(generics.ListCreateAPIView):
     queryset = FriendRequest.objects.all()
     serializer_class = FriendRequestSerializer
 
+    def create(self, request, *args, **kwargs):
+        if 'from_user' in request.data and request.data['from_user'] != str(request.user.id):
+            return Response({"message": "You do not have permission to create this friend request."}, status=status.HTTP_403_FORBIDDEN)
+        return super().create(request, *args, **kwargs)
+
 class FriendRequestAcceptView(generics.UpdateAPIView):
     queryset = FriendRequest.objects.all()
     serializer_class = FriendRequestSerializer
@@ -87,10 +92,48 @@ class FriendRequestAcceptView(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         friend_request = self.get_object()
-        if friend_request.to_user != request.user:
+        if friend_request.to_user != request.user.profile:
             return Response({"message": "You do not have permission to accept this friend request."}, status=status.HTTP_403_FORBIDDEN)
         
-        friend_request.from_user.friends.add(friend_request.to_user)
-        friend_request.to_user.friends.add(friend_request.from_user)
+        friend_request.from_user.friends.add(friend_request.to_user.user)
+        friend_request.to_user.friends.add(friend_request.from_user.user)
+        reverse_friend_request = FriendRequest.objects.filter(from_user=friend_request.to_user, to_user=friend_request.from_user)
+        if reverse_friend_request.exists():
+            reverse_friend_request.delete()
         friend_request.delete()
-        return Response(status=status.HTTP_200_OK)
+        return Response({"message": f"You have successfully accepted request."},status=status.HTTP_200_OK)
+    
+class UserBlockView(generics.UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+    def update(self, request, *args, **kwargs):
+        user_to_block = self.get_object()
+        if request.user == user_to_block:
+            return Response({"message": "You cannot block yourself."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Add the user to the blocked_users of the authenticated user
+        request.user.profile.blocked_users.add(user_to_block)
+
+        return Response({"message": f"You have successfully blocked {user_to_block.username}."}, status=status.HTTP_200_OK)
+    
+class UserUnblockView(generics.UpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def update(self, request, *args, **kwargs):
+        user_to_unblock = self.get_object()
+
+        # Check if the user is in the blocked_users of the authenticated user
+        if user_to_unblock not in request.user.profile.blocked_users.all():
+            return Response({"message": "This user is not in your blocked users list."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Remove the user from the blocked_users of the authenticated user
+        request.user.profile.blocked_users.remove(user_to_unblock)
+
+        return Response({"message": f"You have successfully unblocked {user_to_unblock.username}."}, status=status.HTTP_200_OK)

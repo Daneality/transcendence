@@ -54,12 +54,15 @@ class FriendRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("A user cannot send a friend request to themselves.")
         if 'from_user' in data and FriendRequest.objects.filter(from_user=data['from_user'], to_user=data['to_user']).exists():
             raise serializers.ValidationError("A friend request from this user to the recipient already exists.")
+        if 'from_user' in data and 'to_user' in data and data['from_user'].friends.filter(id=data['to_user'].id).exists():
+            raise serializers.ValidationError("These users are already friends.")
         return data
     
 class ProfileSerializer(serializers.ModelSerializer):
     games = serializers.SerializerMethodField()
     image = serializers.ImageField(max_length=None, use_url=True)
     to_user = FriendRequestSerializer(many=True)
+    friends = serializers.SerializerMethodField()
     class Meta:
         model = Profile
         fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user']
@@ -68,6 +71,9 @@ class ProfileSerializer(serializers.ModelSerializer):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True).data
         games_as_player2 = GameSerializer(obj.games_as_player2.all(), many=True).data
         return sorted(games_as_player1 + games_as_player2, key=lambda game: game['created'], reverse=True)
+    
+    def get_friends(self, obj):  # Add this method
+        return [{'id': friend.id, 'username': friend.username} for friend in obj.friends.all()]
     
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
