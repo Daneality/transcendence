@@ -10,7 +10,10 @@ from django.contrib.auth import authenticate
 from .serializers import RegisterSerializer
 from django.shortcuts import get_object_or_404
 from .serializers import ProfileSerializer
-
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from . models import FriendRequest
+from . serializers import FriendRequestSerializer
 
 # Create your views here.
 class UserList(generics.ListAPIView):
@@ -21,6 +24,8 @@ class UserList(generics.ListAPIView):
 class UserDetail(generics.RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_object(self):
         return get_object_or_404(User, pk=self.kwargs.get('pk'))
@@ -28,6 +33,8 @@ class UserDetail(generics.RetrieveUpdateAPIView):
     def update(self, request, *args, **kwargs):
         user = self.get_object()
         serializer = self.get_serializer(user, data=request.data, partial=True)
+        if (request.user.id != user.id):
+            return Response(status=status.HTTP_403_FORBIDDEN)
         if serializer.is_valid():
             serializer.save()
             if 'image' in request.FILES:
@@ -64,3 +71,26 @@ class LoginAPIView(APIView):
             return Response({'token': str(token), 'user' : UserSerializer(user).data}, status=status.HTTP_200_OK)
         else:
             return Response({'error': 'Invalid username or password'}, status=status.HTTP_400_BAD_REQUEST)
+
+class FriendRequestListCreate(generics.ListCreateAPIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    queryset = FriendRequest.objects.all()
+    serializer_class = FriendRequestSerializer
+
+class FriendRequestAcceptView(generics.UpdateAPIView):
+    queryset = FriendRequest.objects.all()
+    serializer_class = FriendRequestSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+    def update(self, request, *args, **kwargs):
+        friend_request = self.get_object()
+        if friend_request.to_user != request.user:
+            return Response({"message": "You do not have permission to accept this friend request."}, status=status.HTTP_403_FORBIDDEN)
+        
+        friend_request.from_user.friends.add(friend_request.to_user)
+        friend_request.to_user.friends.add(friend_request.from_user)
+        friend_request.delete()
+        return Response(status=status.HTTP_200_OK)

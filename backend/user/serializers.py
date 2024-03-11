@@ -5,6 +5,8 @@ from .models import Profile
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
+from . models import FriendRequest
+from rest_framework import status
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -38,18 +40,35 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 
+
+class FriendRequestSerializer(serializers.ModelSerializer):
+    from_user = serializers.PrimaryKeyRelatedField(read_only=False, queryset=Profile.objects.all())
+    to_user = serializers.PrimaryKeyRelatedField(read_only=False, queryset=Profile.objects.all())
+    class Meta:
+        model = FriendRequest
+        fields = ['id', 'from_user', 'to_user', 'created']
+        read_only_fields = ['created', 'id']
+
+    def validate(self, data):
+        if 'from_user' in data and data['from_user'] == data['to_user']:
+            raise serializers.ValidationError("A user cannot send a friend request to themselves.")
+        if 'from_user' in data and FriendRequest.objects.filter(from_user=data['from_user'], to_user=data['to_user']).exists():
+            raise serializers.ValidationError("A friend request from this user to the recipient already exists.")
+        return data
+    
 class ProfileSerializer(serializers.ModelSerializer):
     games = serializers.SerializerMethodField()
     image = serializers.ImageField(max_length=None, use_url=True)
+    to_user = FriendRequestSerializer(many=True)
     class Meta:
         model = Profile
-        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image']
+        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user']
 
     def get_games(self, obj):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True).data
         games_as_player2 = GameSerializer(obj.games_as_player2.all(), many=True).data
         return sorted(games_as_player1 + games_as_player2, key=lambda game: game['created'], reverse=True)
-
+    
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
 
