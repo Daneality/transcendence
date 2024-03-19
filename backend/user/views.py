@@ -14,6 +14,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from . models import FriendRequest
 from . serializers import FriendRequestSerializer
+from chat.models import Chat
 
 # Create your views here.
 class UserList(generics.ListAPIView):
@@ -79,7 +80,7 @@ class FriendRequestListCreate(generics.ListCreateAPIView):
     serializer_class = FriendRequestSerializer
 
     def create(self, request, *args, **kwargs):
-        if 'from_user' in request.data and request.data['from_user'] != str(request.user.id):
+        if 'from_user' in request.data and request.data['from_user'] != request.user.id:
             return Response({"message": "You do not have permission to create this friend request."}, status=status.HTTP_403_FORBIDDEN)
         return super().create(request, *args, **kwargs)
 
@@ -92,11 +93,11 @@ class FriendRequestAcceptView(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         friend_request = self.get_object()
-        if friend_request.to_user != request.user.profile:
+        if friend_request.to_user.id != request.user.id:
             return Response({"message": "You do not have permission to accept this friend request."}, status=status.HTTP_403_FORBIDDEN)
-        
         friend_request.from_user.friends.add(friend_request.to_user.user)
         friend_request.to_user.friends.add(friend_request.from_user.user)
+        chat = Chat.objects.create(participant1=friend_request.from_user.user, participant2=friend_request.to_user.user)
         reverse_friend_request = FriendRequest.objects.filter(from_user=friend_request.to_user, to_user=friend_request.from_user)
         if reverse_friend_request.exists():
             reverse_friend_request.delete()
