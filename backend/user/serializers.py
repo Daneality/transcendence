@@ -63,9 +63,11 @@ class ProfileSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(max_length=None, use_url=True)
     to_user = FriendRequestSerializer(many=True)
     friends = serializers.SerializerMethodField()
+    is_current_user = serializers.SerializerMethodField()
+
     class Meta:
         model = Profile
-        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user']
+        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user']
 
     def get_games(self, obj):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True).data
@@ -74,6 +76,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     
     def get_friends(self, obj):  # Add this method
         return [{'id': friend.id, 'username': friend.username} for friend in obj.friends.all()]
+
+    def get_is_current_user(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            return obj.user == request.user
+        return False
     
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
