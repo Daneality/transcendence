@@ -64,10 +64,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     to_user = FriendRequestSerializer(many=True)
     friends = serializers.SerializerMethodField()
     is_current_user = serializers.SerializerMethodField()
+    already_sent_request = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Profile
-        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user']
+        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user', 'already_sent_request']
 
     def get_games(self, obj):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True).data
@@ -81,6 +83,12 @@ class ProfileSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
             return obj.user == request.user
+        return False
+    
+    def get_already_sent_request(self, obj):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            return FriendRequest.objects.filter(from_user=request.user.profile, to_user=obj.user.profile).exists()
         return False
     
 class UserSerializer(serializers.ModelSerializer):
