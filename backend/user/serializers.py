@@ -93,6 +93,8 @@ class ProfileSerializer(serializers.ModelSerializer):
     def get_already_sent_request(self, obj):
         request = self.context.get('request')
         if request and hasattr(request, 'user'):
+            if obj.user.profile in request.user.profile.friends.all():
+                return True
             return FriendRequest.objects.filter(from_user=request.user.profile, to_user=obj.user.profile).exists()
         return False
     
