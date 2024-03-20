@@ -44,9 +44,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 class FriendRequestSerializer(serializers.ModelSerializer):
     from_user = serializers.PrimaryKeyRelatedField(read_only=False, queryset=Profile.objects.all())
     to_user = serializers.PrimaryKeyRelatedField(read_only=False, queryset=Profile.objects.all())
+    from_user_username = serializers.SerializerMethodField()
+
     class Meta:
         model = FriendRequest
-        fields = ['id', 'from_user', 'to_user', 'created']
+        fields = ['id', 'from_user' ,'from_user_username', 'to_user', 'created']
         read_only_fields = ['created', 'id']
 
     def validate(self, data):
@@ -57,6 +59,9 @@ class FriendRequestSerializer(serializers.ModelSerializer):
         if 'from_user' in data and 'to_user' in data and data['from_user'].friends.filter(id=data['to_user'].id).exists():
             raise serializers.ValidationError("These users are already friends.")
         return data
+    
+    def get_from_user_username(self, obj):
+        return obj.from_user.user.username
     
 class ProfileSerializer(serializers.ModelSerializer):
     games = serializers.SerializerMethodField()
