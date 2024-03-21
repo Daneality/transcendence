@@ -37,7 +37,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop('password2', None) # Remove the password2 field
         request = self.context.get('request')
         user = get_user_model().objects.create_user(**validated_data)
-        Profile.objects.create(user=user, image="images/default.png", games_lost=0, games_won=0)
+        Profile.objects.create(user=user, image="images/default.jpg", games_lost=0, games_won=0)
         return user
 
 
@@ -78,8 +78,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user', 'already_sent_request']
 
     def get_games(self, obj):
-        games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True).data
-        games_as_player2 = GameSerializer(obj.games_as_player2.all(), many=True).data
+        games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True, context=self.context).data
+        games_as_player2 = GameSerializer(obj.games_as_player2.all(), many=True, context=self.context).data
         return sorted(games_as_player1 + games_as_player2, key=lambda game: game['created'], reverse=True)
     
     def get_friends(self, obj):  # Add this method
