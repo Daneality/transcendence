@@ -37,8 +37,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop('password2', None) # Remove the password2 field
         request = self.context.get('request')
         user = get_user_model().objects.create_user(**validated_data)
-        if 'image' in request.FILES:
-            Profile.objects.create(user=user, image=request.FILES['image'], games_lost=0, games_won=0)
+        Profile.objects.create(user=user, image="images/default.png", games_lost=0, games_won=0)
         return user
 
 
