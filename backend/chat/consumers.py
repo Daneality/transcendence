@@ -16,6 +16,11 @@ def get_user(token_key):
         return token.user
     except Token.DoesNotExist:
         return AnonymousUser()
+    
+@database_sync_to_async
+def has_blocked(sender, recipient):
+    recipient = User.objects.get(id=recipient)
+    return recipient.profile.blocked_users.filter(id=sender.id).exists()
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -61,24 +66,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = text_data_json['message']
         recipient = self.scope['url_route']['kwargs']['recipient']
 
-
-        await sync_to_async(Message.objects.create)(
-            sender=self.sender,
-            text=message,
-            chat=await sync_to_async(Chat.objects.get)(
-                id = self.room_name
+        if not await has_blocked(self.sender, recipient):
+            await sync_to_async(Message.objects.create)(
+                sender=self.sender,
+                text=message,
+                chat=await sync_to_async(Chat.objects.get)(
+                    id = self.room_name
+                )
             )
-        )
-        # Send message to room group
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': message,
-                'sender': str(self.sender),
-                'recipient': recipient
-            }
-        )
+            # Send message to room group
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': message,
+                    'sender': str(self.sender),
+                    'recipient': recipient
+                }
+            )
+        else:
+            print(f"Message not sent. User {recipient} has blocked {self.sender}")
 
     # Receive message from room group
     async def chat_message(self, event):
