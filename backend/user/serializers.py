@@ -22,7 +22,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ['username', 'email', 'password', 'password2']
+        fields = ['username', 'email', 'password', 'password2',]
         extra_kwargs = {
             'password': {'write_only': True},
             'password2': {'write_only': True},
@@ -35,8 +35,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('password2', None) # Remove the password2 field
+        request = self.context.get('request')
         user = get_user_model().objects.create_user(**validated_data)
-        Profile.objects.create(user=user, games_lost=0, games_won=0)
+        if 'image' in request.FILES:
+            Profile.objects.create(user=user, image=request.FILES['image'], games_lost=0, games_won=0)
         return user
 
 

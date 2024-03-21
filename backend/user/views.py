@@ -51,7 +51,7 @@ class UserDetail(generics.RetrieveUpdateAPIView):
 
 class RegisterAPIView(APIView):
     def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
+        serializer = RegisterSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             user = serializer.save()
             if user:
