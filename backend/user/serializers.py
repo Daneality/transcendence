@@ -109,7 +109,25 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
+    password = serializers.CharField(write_only=True, required=False)
+
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'profile']
+        fields = ['id', 'username', 'email', 'profile', ]
+
+    
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        user = super().update(instance, validated_data)
+
+        if password is not None:
+            user.set_password(password)
+            user.save()
+
+        return user
