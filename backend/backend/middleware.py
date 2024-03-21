@@ -16,7 +16,7 @@ class LastActivityMiddleware:
             Profile.objects.filter(user=request.user).update(last_activity=timezone.now())
             print("called")
         except (AttributeError, TypeError, ValueError, OverflowError, token_auth.get_model().DoesNotExist):
-            raise AuthenticationFailed('Invalid token')
+            print("Not authenticated")
 
         response = self.get_response(request)
         return response
