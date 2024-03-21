@@ -1,34 +1,22 @@
-from channels.db import database_sync_to_async
-from django.contrib.auth.models import AnonymousUser
-from rest_framework.authtoken.models import Token
-from urllib.parse import parse_qs
+from django.utils import timezone
+from user.models import Profile
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.authentication import TokenAuthentication
 
-@database_sync_to_async
-def get_user(token_key):
-    try:
-        token = Token.objects.get(key=token_key)
-        return token.user
-    except Token.DoesNotExist:
-        return AnonymousUser()
+class LastActivityMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
 
-class TokenAuthMiddleware:
-    def __init__(self, inner):
-        self.inner = inner
+    def __call__(self, request):
+        token_auth = TokenAuthentication()
+        try:
+            token_key = request.META.get('HTTP_AUTHORIZATION').split(' ')[1]
+            token = token_auth.get_model().objects.get(key=token_key)
+            request.user = token.user
+            Profile.objects.filter(user=request.user).update(last_activity=timezone.now())
+            print("called")
+        except (AttributeError, TypeError, ValueError, OverflowError, token_auth.get_model().DoesNotExist):
+            raise AuthenticationFailed('Invalid token')
 
-    async def __call__(self, scope, receive, send):
-        return TokenAuthMiddlewareInstance(scope, self, receive, send)
-
-class TokenAuthMiddlewareInstance:
-    def __init__(self, scope, middleware, receive, send):
-        self.middleware = middleware
-        self.scope = dict(scope)
-        self.inner = self.middleware.inner
-        self.receive = receive
-        self.send = send
-
-    async def __call__(self):
-        query_string = self.scope['query_string'].decode()
-        token_key = query_string.split('token=')[1]
-        self.scope['user'] = await get_user(token_key)
-        inner = self.middleware.inner(self.scope)
-        return await inner(self.scope, self.receive, self.send)
+        response = self.get_response(request)
+        return response

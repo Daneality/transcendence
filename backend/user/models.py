@@ -11,6 +11,7 @@ class Profile(models.Model):
     friends = models.ManyToManyField(User, related_name='friends')
     blocked_users = models.ManyToManyField(User, related_name='blocked_users')
     image = models.ImageField(upload_to='images/')
+    last_activity = models.DateTimeField(null=True)
     #tournament = models.ForeignKey(Tournament, on_delete=models.SET_NULL, null=True, blank=True, related_name='players')
 
 

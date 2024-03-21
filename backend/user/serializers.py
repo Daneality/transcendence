@@ -7,6 +7,8 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
 from . models import FriendRequest
 from rest_framework import status
+from django.utils import timezone
+from datetime import timedelta
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -71,11 +73,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     friends = serializers.SerializerMethodField()
     is_current_user = serializers.SerializerMethodField()
     already_sent_request = serializers.SerializerMethodField()
+    is_online = serializers.SerializerMethodField()
 
 
     class Meta:
         model = Profile
-        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user', 'already_sent_request']
+        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user', 'already_sent_request', 'is_online']
 
     def get_games(self, obj):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True, context=self.context).data
@@ -98,7 +101,12 @@ class ProfileSerializer(serializers.ModelSerializer):
                 return True
             return FriendRequest.objects.filter(from_user=request.user.profile, to_user=obj.user.profile).exists()
         return False
-    
+
+    def get_is_online(self, obj):
+        if obj.last_activity:
+            return timezone.now() - obj.last_activity < timedelta(minutes=1)
+        return False
+
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
 
