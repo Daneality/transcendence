@@ -33,6 +33,8 @@ class ChatSerializer(serializers.ModelSerializer):
 
 class ChatSerializerList(serializers.ModelSerializer):
     participant2 = serializers.SerializerMethodField()
+    messages = MessageSerializer(many=True, read_only=True)
+
     class Meta:
         model = Chat
         fields = ['id', 'participant2', 'messages']
