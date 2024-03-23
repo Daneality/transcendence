@@ -6,3 +6,4 @@ channels
 channels-redis
 daphne
 Pillow
+django-websockets

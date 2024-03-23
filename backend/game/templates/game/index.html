@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Transcendence</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        canvas {
+            background: #eee;
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <canvas id="myCanvas" width="480" height="480"></canvas>
+
+    <script>
+        var canvas = document.getElementById("myCanvas");
+        var ctx = canvas.getContext("2d");
+        var ws = new WebSocket('ws://localhost:8000/ws/game_consumer/');
+        var opened = false;
+        var playerId = null;
+        var playerNum = 0;
+        var x = canvas.width / 2;
+        var y = canvas.height / 2;
+        var ballRadius = 10;
+        var paddleHeight = 75;
+        var paddleWidth = 10;
+        ws.onopen = function(event) {
+            opened = true;
+
+            console.log('WebSocket connection opened');
+        };
+        ws.onclose = function(event) {
+            opened = false;
+            console.log('WebSocket connection closed');
+        };
+        ws.onerror = function(event) {
+            console.error('WebSocket error:', event);
+        };
+        function sendMessage(message) {
+            ws.send(JSON.stringify(message));
+        }
+        var players = [
+            {paddleY: (canvas.height - paddleHeight) / 2,
+            upPressed: false,
+            downPressed: false,
+            score: 0,},
+            {paddleY: (canvas.height - paddleHeight) / 2,
+            upPressed: false,
+            downPressed: false,
+            score: 0,}
+        ];
+        document.addEventListener("keydown", keyDownHandler, false);
+        document.addEventListener("keyup", keyUpHandler, false);
+
+        function keyDownHandler(e) {
+            if (e.code == "ArrowUp") {
+                players[0].upPressed = true;
+            }
+            else if (e.code == 'ArrowDown') {
+                players[0].downPressed = true;
+            }
+        }
+        function keyUpHandler(e) {
+            if (e.code == "ArrowUp") {
+                players[0].upPressed = false;
+            }
+            else if (e.code == 'ArrowDown') {
+                players[0].downPressed = false;
+            }
+        }
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+        function drawPaddles() {
+            ctx.beginPath();
+            ctx.rect(0, players[0].paddleY, paddleWidth, paddleHeight);
+            ctx.rect(canvas.width - paddleWidth, players[1].paddleY, paddleWidth, paddleHeight);
+            ctx.fillStyle = "#0095DD";
+            ctx.fill();
+            ctx.closePath();
+        }
+        function drawScore() {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("Score: " + players[0].score + " : " + players[1].score, 8, 20);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBall();
+            drawPaddles();
+            drawScore();
+                // if (opened)
+                // {
+                //     sendMessage({
+                //         type: 'game_update',
+                //         players: players,
+                //     });
+                // }
+                requestAnimationFrame(draw);
+            }
+        ws.onmessage = function(event) {
+            var message = JSON.parse(event.data);
+            if (message.type === 'playerId') {
+                playerId = message.playerId;
+                playerNum = message.playerNum;
+                console.log('Received playerId:', message.playerId);
+            }
+            else if (message.type === 'game_start') {
+                console.log('Received game_start:', message);
+                draw();
+            }
+            else if (message.type === 'game_update') {
+                x = message.x;
+                y = message.y;
+                dx = message.dx;
+                dy = message.dy;
+                players[0].paddleY = message.players[0].paddleY;
+                players[0].score = message.players[0].score;
+                players[1].paddleY = message.players[1].paddleY;
+                players[1].score = message.players[1].score;
+                sendMessage({
+                        type: 'game_update',
+                        playerId: playerId,
+                        playerNum: playerNum,
+                        upPressed: players[0].upPressed,
+                        downPressed: players[0].downPressed,
+                    });
+            }
+            console.log('Received message:', message);
+        };
+
+        
+    </script>
+
+</body>
+
+</html>

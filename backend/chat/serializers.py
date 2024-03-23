@@ -19,22 +19,12 @@ class ChatSerializer(serializers.ModelSerializer):
     def get_participant2(self, obj):
         request = self.context.get('request')
         if obj.participant1 == request.user:
-            return {
-                'id': obj.participant2.id,
-                'username': obj.participant2.username,
-                'profile_image': obj.participant2.profile.image.url
-            }
+            return obj.participant2.id
         else:
-             return {
-                'id': obj.participant1.id,
-                'username': obj.participant1.username,
-                'profile_image': obj.participant1.profile.image.url
-            }
+            return obj.participant1.id
 
 class ChatSerializerList(serializers.ModelSerializer):
     participant2 = serializers.SerializerMethodField()
-    messages = MessageSerializer(many=True, read_only=True)
-
     class Meta:
         model = Chat
         fields = ['id', 'participant2', 'messages']
@@ -42,14 +32,6 @@ class ChatSerializerList(serializers.ModelSerializer):
     def get_participant2(self, obj):
         request = self.context.get('request')
         if obj.participant1 == request.user:
-            return {
-                'id': obj.participant2.id,
-                'username': obj.participant2.username,
-                'profile_image': obj.participant2.profile.image.url if obj.participant2.profile.image else None
-            }
+            return obj.participant2.id
         else:
-             return {
-                'id': obj.participant1.id,
-                'username': obj.participant1.username,
-                'profile_image': obj.participant1.profile.image.url if obj.participant1.profile.image else None
-            }
+            return obj.participant1.id
