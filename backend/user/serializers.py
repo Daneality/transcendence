@@ -66,10 +66,20 @@ class FriendRequestSerializer(serializers.ModelSerializer):
     def get_from_user_username(self, obj):
         return obj.from_user.user.username
     
+class GameInviteSerializer(serializers.ModelSerializer):
+    to_user = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all())
+    from_user_id = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = GameInvite
+        fields = ['id', 'from_user', 'from_user_id', 'to_user', 'created']
+        read_only_fields = ['from_user', 'from_user_id']
+
 class ProfileSerializer(serializers.ModelSerializer):
     games = serializers.SerializerMethodField()
     image = serializers.ImageField(max_length=None, use_url=True)
-    to_user = FriendRequestSerializer(many=True)
+    to_user = FriendRequestSerializer(many=True, read_only=True)
+    game_invites_received = GameInviteSerializer(many=True, read_only=True)
     friends = serializers.SerializerMethodField()
     is_current_user = serializers.SerializerMethodField()
     already_sent_request = serializers.SerializerMethodField()
@@ -79,7 +89,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Profile
-        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user', 'already_sent_request', 'is_online', 'tournament']
+        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'game_invites_received', 'is_current_user', 'already_sent_request', 'is_online', 'tournament']
 
     def get_games(self, obj):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True, context=self.context).data
@@ -141,10 +151,3 @@ class UserSerializer(serializers.ModelSerializer):
 
         return user
     
-class GameInviteSerializer(serializers.ModelSerializer):
-    to_user = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all())
-    from_user_id = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all())
-
-    class Meta:
-        model = GameInvite
-        fields = ['id', 'from_user', 'from_user_id','to_user', 'created']

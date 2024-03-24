@@ -31,11 +31,10 @@ class FriendRequest(models.Model):
         return f'{self.from_user.username} to {self.to_user.username}'
     
 class GameInvite(models.Model):
-    from_user = models.CharField
+    from_user = models.CharField(max_length=255)
     from_user_id = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='game_invites_sent', null=True)
     to_user = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='game_invites_received')
     created = models.DateTimeField(auto_now_add=True)
-    room_name = models.CharField(max_length=255)
 
     class Meta:
         ordering = ['created']

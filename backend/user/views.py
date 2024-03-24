@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from user.serializers import UserSerializer
+from user.serializers import UserSerializer, GameInviteSerializer
 from rest_framework import generics
 from rest_framework.authtoken.models import Token
 from rest_framework.views import APIView 
@@ -11,10 +11,12 @@ from .serializers import RegisterSerializer
 from django.shortcuts import get_object_or_404
 from .serializers import ProfileSerializer
 from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from . models import FriendRequest
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from . models import FriendRequest, GameInvite
 from . serializers import FriendRequestSerializer
 from chat.models import Chat
+from rest_framework.exceptions import ValidationError
+
 
 # Create your views here.
 class UserList(generics.ListAPIView):
@@ -75,7 +77,7 @@ class LoginAPIView(APIView):
 
 class FriendRequestListCreate(generics.ListCreateAPIView):
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
     queryset = FriendRequest.objects.all()
     serializer_class = FriendRequestSerializer
 
@@ -88,7 +90,7 @@ class FriendRequestAcceptView(generics.UpdateAPIView):
     queryset = FriendRequest.objects.all()
     serializer_class = FriendRequestSerializer
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
 
     def update(self, request, *args, **kwargs):
@@ -108,7 +110,7 @@ class UserBlockView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
 
     def update(self, request, *args, **kwargs):
@@ -125,7 +127,7 @@ class UserUnblockView(generics.UpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     def update(self, request, *args, **kwargs):
         user_to_unblock = self.get_object()
@@ -138,3 +140,21 @@ class UserUnblockView(generics.UpdateAPIView):
         request.user.profile.blocked_users.remove(user_to_unblock)
 
         return Response({"message": f"You have successfully unblocked {user_to_unblock.username}."}, status=status.HTTP_200_OK)
+    
+class GameInviteCreateView(generics.CreateAPIView):
+    queryset = GameInvite.objects.all()
+    serializer_class = GameInviteSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        from_user = self.request.user.profile
+        to_user = serializer.validated_data['to_user']
+
+        if from_user == to_user:
+            raise ValidationError('You cannot invite yourself')
+
+        if GameInvite.objects.filter(from_user=from_user, to_user=to_user).exists():
+            raise ValidationError('You have already sent an invite to this user')
+
+        serializer.save(from_user=from_user.user.username, from_user_id=from_user, to_user=to_user)

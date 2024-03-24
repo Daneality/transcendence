@@ -12,6 +12,8 @@ urlpatterns = [
     path('login/', views.LoginAPIView.as_view(), name='login'),
     path('friend-requests/<int:pk>/accept/', views.FriendRequestAcceptView.as_view(), name='friend-request-accept'),
     path('friend-requests/', views.FriendRequestListCreate.as_view(), name='friend-request-accept'),
+    path('game-invites/create/', views.GameInviteCreateView.as_view(), name='game-invite-create'),
+
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)
