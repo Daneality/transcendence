@@ -27,7 +27,7 @@
         var ctx = canvas.getContext("2d");
         var ws = new WebSocket('ws://localhost:8000/ws/game_consumer/');
         var opened = false;
-        var playerId = null;
+        // var playerId = null;
         var playerNum = 0;
         var x = canvas.width / 2;
         var y = canvas.height / 2;
@@ -115,10 +115,9 @@
             }
         ws.onmessage = function(event) {
             var message = JSON.parse(event.data);
-            if (message.type === 'playerId') {
-                playerId = message.playerId;
+            if (message.type === 'playerNum') {
                 playerNum = message.playerNum;
-                console.log('Received playerId:', message.playerId);
+                console.log('Received playerNum:', message.playerNum);
             }
             else if (message.type === 'game_start') {
                 console.log('Received game_start:', message);
@@ -127,15 +126,15 @@
             else if (message.type === 'game_update') {
                 x = message.x;
                 y = message.y;
-                dx = message.dx;
-                dy = message.dy;
-                players[0].paddleY = message.players[0].paddleY;
-                players[0].score = message.players[0].score;
-                players[1].paddleY = message.players[1].paddleY;
-                players[1].score = message.players[1].score;
+                // dx = message.dx;
+                // dy = message.dy;
+                players[0].paddleY = message.player1_paddleY;
+                players[1].paddleY = message.player2_paddleY;
+                players[0].score = message.player1_score;
+                players[1].score = message.player2_score;
                 sendMessage({
                         type: 'game_update',
-                        playerId: playerId,
+                        // playerId: playerId,
                         playerNum: playerNum,
                         upPressed: players[0].upPressed,
                         downPressed: players[0].downPressed,

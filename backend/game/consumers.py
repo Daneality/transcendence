@@ -10,6 +10,8 @@ from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import AnonymousUser
 from rest_framework.authtoken.models import Token
+from urllib.parse import parse_qs
+from django.core.cache import cache
 
 @database_sync_to_async
 def game_save(self, player1, player2, score1, score2, winner, date):
@@ -28,7 +30,6 @@ def get_user(token_key):
 
 class GameConsumer(AsyncWebsocketConsumer):
 
-    game_group_name = "game_group"
     players = {}
     ball_radius = 10
     paddle_height = 75
@@ -45,24 +46,38 @@ class GameConsumer(AsyncWebsocketConsumer):
         if token_key:
             self.player = await get_user(token_key[0])
             if self.player.is_authenticated:
-                playerNum = len(self.players)
+                opponent = self.scope['url_route']['kwargs']['recipient']
+                playerLen = len(self.players)
+                self.room_name = '_'.join(sorted([str(self.player.id), opponent]))
+                self.room_group_name = 'game_%s' % self.room_name
+                count = cache.get(self.room_group_name, 0)
+                cache.set(self.room_group_name, count + 1)
+                await self.channel_layer.group_add(
+                    self.room_group_name,
+                    self.channel_name
+                )
+                await self.send(
+                    text_data=json.dumps({"type": "playerNum", "playerNum": count})
+                )
                 async with self.update_lock:
-                    self.players[playerNum] = {
-                        "user": self.player,
-                        "id": self.player_id,
-                        "playerNum": playerNum,
+                    self.players[playerLen] = {
+                        "userId": str(self.player.id),
+                        "room_group_name": self.room_group_name,
+                        "playerNum": count,
                         "paddleY": (self.canvas_height - self.paddle_height) / 2,
                         "upPressed": False,
                         "downPressed": False,
                         "score": 0,
                     }
-                self.room_name = '_'.join(sorted([str(self.player.id), recipient]))
-                self.room_group_name = 'game_%s' % self.room_name
-
-                await self.channel_layer.group_add(
-                    self.room_group_name,
-                    self.channel_name
-                )
+                if count == 1:
+                    opponent_index = next((index for index, player in enumerate(self.players.values()) if player["userId"] == opponent), None)
+                    asyncio.create_task(self.game_loop(player1_index=opponent_index, player2_index=playerLen))
+                    await self.channel_layer.group_send(
+                            self.game_group_name,
+                            {
+                                "type": "game_start",
+                            },
+                        )
 
                 await self.accept()
             else:
@@ -74,18 +89,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         # await self.channel_layer.group_add(
         #     self.game_group_name, self.channel_name
         # )
-        # await self.send(
-        #     text_data=json.dumps({"type": "playerId", "playerId": self.player_id, "playerNum": playerNum})
-        # )
         
-        # if (len(self.players) == 2):
-        #     asyncio.create_task(self.game_loop())
-        #     await self.channel_layer.group_send(
-        #             self.game_group_name,
-        #             {
-        #                 "type": "game_start",
-        #             },
-        #         )
+        
 
     async def disconnect(self, close_code):
         async with self.update_lock:
@@ -93,17 +98,17 @@ class GameConsumer(AsyncWebsocketConsumer):
                 del self.players[self.player_id]
 
         await self.channel_layer.group_discard(
-            self.game_group_name, self.channel_name
+            self.room_group_name, self.channel_name
         )
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message_type = text_data_json.get("type", "")
-        player_id = text_data_json["playerId"]
-        playerNum = text_data_json["playerNum"]
         if message_type == 'game_update':
-            self.players[playerNum]["upPressed"] = text_data_json["upPressed"]
-            self.players[playerNum]["downPressed"] = text_data_json["downPressed"]
+            playerNum = text_data_json["playerNum"]
+            player_index = next((index for index, player in self.players.items() if player["room_group_name"] == self.room_group_name and player["playerNum"] == playerNum), None)
+            self.players[player_index]["upPressed"] = text_data_json["upPressed"]
+            self.players[player_index]["downPressed"] = text_data_json["downPressed"]
         else:
             pass
             
@@ -114,9 +119,10 @@ class GameConsumer(AsyncWebsocketConsumer):
                     "type": "game_update",
                     "x": event["x"],
                     "y": event["y"],
-                    "dx": event["dx"],
-                    "dy": event["dy"],
-                    "players": event["players"],
+                    "player1_paddleY": event["player1_paddleY"],
+                    "player2_paddleY": event["player2_paddleY"],
+                    "player1_score": event["player1_score"],
+                    "player2_score": event["player2_score"],
                 }
             )
         )
@@ -139,7 +145,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             )
         )
         
-    async def game_loop(self):
+    async def game_loop(self, player1_index, player2_index):
         x = self.canvas_width / 2
         y = self.canvas_height - 30
         dx = 1
@@ -147,63 +153,67 @@ class GameConsumer(AsyncWebsocketConsumer):
         while len(self.players) > 1:
             await asyncio.sleep(0.01)
             async with self.update_lock:
-                if (self.players[0]["score"] == 1 or self.players[1]["score"] == 1):
+                if (self.players[player1_index]["score"] == 1 or self.players[player2_index]["score"] == 1):
                     await self.channel_layer.group_send(
                         self.game_group_name,
                         {
                             "type": "game_end",
                         },
                     )
-                    player1 = self.players[0]["id"]
-                    player2 = self.players[1]["id"]
-                    score1 = self.players[0]["score"]
-                    score2 = self.players[1]["score"]
+                    player1 = self.players[player1_index]["id"]
+                    player2 = self.players[player2_index]["id"]
+                    score1 = self.players[player1_index]["score"]
+                    score2 = self.players[player2_index]["score"]
                     winner = player1 if score1 > score2 else player2
                     date = time.strftime('%Y-%m-%d %H:%M:%S')
                     await game_save(player1, player2, score1, score2, winner, date)
                     break
-                for player in self.players.values():
-                    if player["upPressed"] and player["paddleY"] > 0:
-                        player["paddleY"] -= 7
-                    elif player["downPressed"] and player["paddleY"] < self.canvas_height - self.paddle_height:
-                        player["paddleY"] += 7
+                if self.players[player1_index]["upPressed"] and self.players[player1_index]["paddleY"] > 0:
+                    self.players[player1_index]["paddleY"] -= 7
+                elif self.players[player1_index]["downPressed"] and self.players[player1_index]["paddleY"] < self.canvas_height - self.paddle_height:
+                    self.players[player1_index]["paddleY"] += 7
+                if self.players[player2_index]["upPressed"] and self.players[player2_index]["paddleY"] > 0:
+                    self.players[player2_index]["paddleY"] -= 7
+                elif self.players[player2_index]["downPressed"] and self.players[player2_index]["paddleY"] < self.canvas_height - self.paddle_height:
+                    self.players[player2_index]["paddleY"] += 7
                 if (y + dy > self.canvas_height - self.ball_radius or y + dy < self.ball_radius):
                     dy = -dy
                 if (x + dx < self.ball_radius):
-                    if (y > self.players[0]["paddleY"] and y < self.players[0]["paddleY"] + self.paddle_height):
+                    if (y > self.players[player1_index]["paddleY"] and y < self.players[player1_index]["paddleY"] + self.paddle_height):
                         dx = -dx
                     else:
-                        self.players[1]["score"] += 1
+                        self.players[player2_index]["score"] += 1
                         x = self.canvas_width / 2
                         y = self.canvas_height - 30
                         dx = 1
                         dy = -1
-                        self.players[0]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
-                        self.players[1]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        self.players[player1_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        self.players[player2_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
 
                 elif (x + dx > self.canvas_width - self.ball_radius):
-                    if (y > self.players[1]["paddleY"] and y < self.players[1]["paddleY"] + self.paddle_height):
+                    if (y > self.players[player2_index]["paddleY"] and y < self.players[player2_index]["paddleY"] + self.paddle_height):
                         dx = -dx
                     else:
-                        self.players[0]["score"] += 1
+                        self.players[player1_index]["score"] += 1
                         x = self.canvas_width / 2
                         y = self.canvas_height - 30
                         dx = 1
                         dy = -1
-                        self.players[0]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
-                        self.players[1]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        self.players[player1_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        self.players[player2_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                 x += dx
                 y += dy
 
                 await self.channel_layer.group_send(
-                    self.game_group_name,
+                    self.room_group_name,
                     {
                         "type": "game_update",
                         "x": x,
                         "y": y,
-                        "dx": dx,
-                        "dy": dy,
-                        "players": self.players,
+                        "player1_paddleY": self.players[player1_index]["paddleY"],
+                        "player2_paddleY": self.players[player2_index]["paddleY"],
+                        "player1_score": self.players[player1_index]["score"],
+                        "player2_score": self.players[player2_index]["score"],
                     },
                 )
 
