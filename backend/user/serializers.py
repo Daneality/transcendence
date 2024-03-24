@@ -5,7 +5,7 @@ from .models import Profile
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
-from . models import FriendRequest
+from . models import FriendRequest, GameInvite
 from rest_framework import status
 from django.utils import timezone
 from datetime import timedelta
@@ -74,11 +74,12 @@ class ProfileSerializer(serializers.ModelSerializer):
     is_current_user = serializers.SerializerMethodField()
     already_sent_request = serializers.SerializerMethodField()
     is_online = serializers.SerializerMethodField()
+    tournament = serializers.SerializerMethodField()
 
 
     class Meta:
         model = Profile
-        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user', 'already_sent_request', 'is_online']
+        fields = ['games_lost', 'games_won', 'friends', 'blocked_users', 'games', 'image', 'to_user', 'is_current_user', 'already_sent_request', 'is_online', 'tournament']
 
     def get_games(self, obj):
         games_as_player1 = GameSerializer(obj.games_as_player1.all(), many=True, context=self.context).data
@@ -107,6 +108,14 @@ class ProfileSerializer(serializers.ModelSerializer):
             return timezone.now() - obj.last_activity < timedelta(minutes=1)
         return False
 
+    def get_tournament(self, obj):
+        if obj.tournament:
+            return {
+                "name": obj.tournament.name,
+                "id": obj.tournament.id
+                    }
+        return None
+
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
     password = serializers.CharField(write_only=True, required=False)
@@ -131,3 +140,11 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
+    
+class GameInviteSerializer(serializers.ModelSerializer):
+    to_user = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all())
+    from_user_id = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all())
+
+    class Meta:
+        model = GameInvite
+        fields = ['id', 'from_user', 'from_user_id','to_user', 'created']

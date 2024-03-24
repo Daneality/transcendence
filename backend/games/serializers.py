@@ -2,6 +2,9 @@ from rest_framework import serializers
 from games.models import Game
 from django.contrib.auth.models import User
 from user.models import Profile
+from django.apps import apps
+
+Tournament = apps.get_model('games', 'Tournament')
 
 class GameSerializer(serializers.ModelSerializer):
     player1 = serializers.PrimaryKeyRelatedField(queryset=Profile.objects.all(), read_only=False, write_only=True)
@@ -41,3 +44,15 @@ class GameSerializer(serializers.ModelSerializer):
             elif obj.player2.user == request.user:
                 return obj.player1.user.username
         return None
+    
+
+
+class TournamentSerializer(serializers.ModelSerializer):
+    game1 = GameSerializer(read_only=True)
+    game2 = GameSerializer(read_only=True)
+    game3 = GameSerializer(read_only=True)
+
+    class Meta:
+        model = Tournament
+        fields = ['id', 'created', 'name', 'game1', 'game2', 'game3']
+        read_only_fields = ['name']

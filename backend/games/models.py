@@ -19,7 +19,7 @@ class Game(models.Model):
 
 class Tournament(models.Model):
     created = models.DateTimeField(auto_now_add=True)
-    players = models.ManyToManyField(Profile, related_name='tournaments')
+    name = models.CharField(max_length=255)
     game1 = models.ForeignKey(Game, related_name='game1', on_delete=models.CASCADE, null=True, blank=True)
     game2 = models.ForeignKey(Game, related_name='game2', on_delete=models.CASCADE, null=True, blank=True)
     game3 = models.ForeignKey(Game, related_name='game3', on_delete=models.CASCADE, null=True, blank=True)
