@@ -13,6 +13,7 @@ urlpatterns = [
     path('friend-requests/<int:pk>/accept/', views.FriendRequestAcceptView.as_view(), name='friend-request-accept'),
     path('friend-requests/', views.FriendRequestListCreate.as_view(), name='friend-request-accept'),
     path('game-invites/create/', views.GameInviteCreateView.as_view(), name='game-invite-create'),
+    path('game-invites/delete/<int:pk>/', views.GameInviteDeleteView.as_view(), name='game-invite-delete'),
 
 ]
 

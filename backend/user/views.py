@@ -16,6 +16,7 @@ from . models import FriendRequest, GameInvite
 from . serializers import FriendRequestSerializer
 from chat.models import Chat
 from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied
 
 
 # Create your views here.
@@ -157,4 +158,20 @@ class GameInviteCreateView(generics.CreateAPIView):
         if GameInvite.objects.filter(from_user=from_user, to_user=to_user).exists():
             raise ValidationError('You have already sent an invite to this user')
 
-        serializer.save(from_user=from_user.user.username, from_user_id=from_user, to_user=to_user)
+        try:
+            serializer.save(from_user=from_user)
+        except:
+            raise ValidationError('You have already sent an invite to this user')
+
+class GameInviteDeleteView(generics.DestroyAPIView):
+    queryset = GameInvite.objects.all()
+    serializer_class = GameInviteSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def destroy(self, request, *args, **kwargs):
+        invite = self.get_object()
+        if invite.from_user_id != request.user.profile.id:
+            raise PermissionDenied('You do not have permission to delete this invite')
+
+        return super().destroy(request, *args, **kwargs)
