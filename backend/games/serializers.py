@@ -51,8 +51,12 @@ class TournamentSerializer(serializers.ModelSerializer):
     game1 = GameSerializer(read_only=True)
     game2 = GameSerializer(read_only=True)
     game3 = GameSerializer(read_only=True)
+    isFull = serializers.SerializerMethodField()
 
     class Meta:
         model = Tournament
-        fields = ['id', 'created', 'name', 'game1', 'game2', 'game3']
+        fields = ['id', 'created', 'name', 'game1', 'game2', 'game3', 'isFull']
         read_only_fields = ['name']
+
+    def get_isFull(self, obj):
+        return obj.players.count() >= 4

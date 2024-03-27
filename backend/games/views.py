@@ -10,6 +10,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from rest_framework.exceptions import NotFound
+from user.models import GameInvite
 
 
 
@@ -17,7 +18,7 @@ class GameList(APIView):
     """
     List all snippets, or create a new snippet.
     """
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, format=None):
         snippets = Game.objects.all()
@@ -35,7 +36,7 @@ class GameDetail(APIView):
     """
     Retrieve, update or delete a snippet instance.
     """
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
 
     def get_object(self, pk):
@@ -109,6 +110,11 @@ class TournamentRegisterView(generics.UpdateAPIView):
             raise ValidationError('This tournament has already started')
         profile.tournament = tournament
         profile.save()
+
+        if tournament.players.count() == 4:
+            players = list(tournament.players.all())
+            GameInvite.objects.create(from_user=players[0], to_user=players[1])
+            GameInvite.objects.create(from_user=players[2], to_user=players[3])
 
         return Response(self.get_serializer(tournament).data, status=status.HTTP_200_OK)
 

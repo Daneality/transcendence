@@ -29,7 +29,7 @@ class UserDetail(generics.RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     def get_object(self):
         return get_object_or_404(User, pk=self.kwargs.get('pk'))
@@ -171,7 +171,7 @@ class GameInviteDeleteView(generics.DestroyAPIView):
 
     def destroy(self, request, *args, **kwargs):
         invite = self.get_object()
-        if invite.from_user_id != request.user.profile.id:
-            raise PermissionDenied('You do not have permission to delete this invite')
+        # if invite.from_user_id != request.user.profile.id:
+        #     raise PermissionDenied('You do not have permission to delete this invite')
 
         return super().destroy(request, *args, **kwargs)
