@@ -46,7 +46,8 @@ class GameConsumer(AsyncWebsocketConsumer):
         if token_key:
             self.player = await get_user(token_key[0])
             if self.player.is_authenticated:
-                opponent = self.scope['url_route']['kwargs']['recipient']
+                await self.accept()
+                opponent = self.scope['url_route']['kwargs']['opponent']
                 playerLen = len(self.players)
                 self.room_name = '_'.join(sorted([str(self.player.id), opponent]))
                 self.room_group_name = 'game_%s' % self.room_name
@@ -73,13 +74,13 @@ class GameConsumer(AsyncWebsocketConsumer):
                     opponent_index = next((index for index, player in enumerate(self.players.values()) if player["userId"] == opponent), None)
                     asyncio.create_task(self.game_loop(player1_index=opponent_index, player2_index=playerLen))
                     await self.channel_layer.group_send(
-                            self.game_group_name,
+                            self.room_group_name,
                             {
                                 "type": "game_start",
                             },
                         )
 
-                await self.accept()
+                
             else:
                 await self.close()
         else:
@@ -93,13 +94,14 @@ class GameConsumer(AsyncWebsocketConsumer):
         
 
     async def disconnect(self, close_code):
-        async with self.update_lock:
-            if self.player_id in self.players:
-                del self.players[self.player_id]
+        pass
+        # async with self.update_lock:
+        #     if self.player_id in self.players:
+        #         del self.players[self.player_id]
 
-        await self.channel_layer.group_discard(
-            self.room_group_name, self.channel_name
-        )
+        # await self.channel_layer.group_discard(
+        #     self.room_group_name, self.channel_name
+        # )
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
@@ -155,13 +157,13 @@ class GameConsumer(AsyncWebsocketConsumer):
             async with self.update_lock:
                 if (self.players[player1_index]["score"] == 1 or self.players[player2_index]["score"] == 1):
                     await self.channel_layer.group_send(
-                        self.game_group_name,
+                        self.room_group_name,
                         {
                             "type": "game_end",
                         },
                     )
-                    player1 = self.players[player1_index]["id"]
-                    player2 = self.players[player2_index]["id"]
+                    player1 = self.players[player1_index]["userId"]
+                    player2 = self.players[player2_index]["userId"]
                     score1 = self.players[player1_index]["score"]
                     score2 = self.players[player2_index]["score"]
                     winner = player1 if score1 > score2 else player2

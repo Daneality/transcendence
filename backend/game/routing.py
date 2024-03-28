@@ -9,3 +9,10 @@
 # application = ProtocolTypeRouter({
 #     'websocket': URLRouter(websocket_urlpatterns),
 # })
+from django.urls import re_path
+
+from game.consumers import GameConsumer
+
+websocket_urlpatterns = [
+    re_path(r'ws/game_consumer/(?P<opponent>\w+)/$', GameConsumer.as_asgi()),
+]
