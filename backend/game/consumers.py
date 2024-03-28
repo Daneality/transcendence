@@ -14,8 +14,8 @@ from urllib.parse import parse_qs
 from django.core.cache import cache
 
 @database_sync_to_async
-def game_save(self, player1, player2, score1, score2, winner, date):
-    result = Game(player1=player1, player2=player2, p1_score=score1, p2_score=score2, winner=winner, date=date)
+def game_save(player1, player2, score1, score2, winner):
+    result = Game(player1=player1, player2=player2, p1_score=score1, p2_score=score2, winner=winner)
     result.save()
     all_records = Game.objects.all()
     print(all_records)
@@ -79,6 +79,7 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                                 "type": "game_start",
                             },
                         )
+
 
                 
             else:
@@ -158,13 +159,13 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                             "type": "game_end",
                         },
                     )
-                    player1 = self.players[player1_index]["userId"]
-                    player2 = self.players[player2_index]["userId"]
-                    score1 = self.players[player1_index]["score"]
-                    score2 = self.players[player2_index]["score"]
-                    winner = player1 if score1 > score2 else player2
+                    player1 =int(self.players[player1_index]["userId"])
+                    player2 = int(self.players[player2_index]["userId"])
+                    score1 = int(self.players[player1_index]["score"])
+                    score2 = int(self.players[player2_index]["score"])
+                    winner = int(player1 if score1 > score2 else player2)
                     date = time.strftime('%Y-%m-%d %H:%M:%S')
-                    await game_save(player1, player2, score1, score2, winner, date)
+                    await game_save(player1, player2, score1, score2, winner)
                     break
                 if self.players[player1_index]["upPressed"] and self.players[player1_index]["paddleY"] > 0:
                     self.players[player1_index]["paddleY"] -= 7
