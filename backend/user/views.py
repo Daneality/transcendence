@@ -149,17 +149,15 @@ class GameInviteCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        from_user = self.request.user.profile
+        from_user = self.request.user.username
+        from_user_id = self.request.user.profile
         to_user = serializer.validated_data['to_user']
 
-        if from_user == to_user:
+        if from_user == to_user.user.username:
             raise ValidationError('You cannot invite yourself')
-
-        if GameInvite.objects.filter(from_user=from_user, to_user=to_user).exists():
-            raise ValidationError('You have already sent an invite to this user')
-
         try:
-            serializer.save(from_user=from_user)
+            print(from_user_id, from_user, to_user)
+            serializer.save(from_user=from_user, from_user_id=from_user_id, to_user=to_user)
         except:
             raise ValidationError('You have already sent an invite to this user')
 
