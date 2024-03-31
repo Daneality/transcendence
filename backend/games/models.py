@@ -12,6 +12,8 @@ class Game(models.Model):
     player1 = models.ForeignKey(Profile, related_name='games_as_player1', on_delete=models.CASCADE)
     player2 = models.ForeignKey(Profile, related_name='games_as_player2', on_delete=models.CASCADE)
     
+    def __str__(self):
+        return f'{self.player1.user.username} vs {self.player2.user.username}, score: {self.p1_score} - {self.p2_score}, winner: player {self.winner}, played - {self.created}'
 
     class Meta:
         ordering = ['created']

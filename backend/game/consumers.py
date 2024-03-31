@@ -6,6 +6,8 @@ import time
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import async_to_sync
 from games.models import Game
+from user.models import Profile
+from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
 from asgiref.sync import sync_to_async
 from django.contrib.auth.models import AnonymousUser
@@ -14,11 +16,26 @@ from urllib.parse import parse_qs
 from django.core.cache import cache
 
 @database_sync_to_async
-def game_save(player1, player2, score1, score2, winner):
+def game_save(player1_id, player2_id, score1, score2):
+    user1 = User.objects.get(id=player1_id)
+    user2 = User.objects.get(id=player2_id)
+    player1 = Profile.objects.get(user=user1)
+    player2 = Profile.objects.get(user=user2)
+    winner = 1 if score1 > score2 else 2
     result = Game(player1=player1, player2=player2, p1_score=score1, p2_score=score2, winner=winner)
-    result.save()
-    all_records = Game.objects.all()
-    print(all_records)
+    if (player1.tournament is None):
+        result.save()
+    else:
+        tournament = player1.tournament
+        if (tournament.game1 is None):
+            tournament.game1 = result
+        elif (tournament.game2 is None):
+            tournament.game2 = result
+        elif (tournament.game3 is None):
+            tournament.game3 = result
+        tournament.save()
+    # all_records = Game.objects.all()
+    # print(all_records)
 
 @database_sync_to_async
 def get_user(token_key):
@@ -28,9 +45,12 @@ def get_user(token_key):
     except Token.DoesNotExist:
         return AnonymousUser()
 
+
+
 class PrivateGameConsumer(AsyncWebsocketConsumer):
 
     players = {}
+    playerLen = 0
     ball_radius = 10
     paddle_height = 75
     canvas_width = 480
@@ -48,7 +68,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
             if self.player.is_authenticated:
                 await self.accept()
                 opponent = self.scope['url_route']['kwargs']['opponent']
-                playerLen = len(self.players)
+                # playerLen = len(self.players)
+
                 self.room_name = '_'.join(sorted([str(self.player.id), opponent]))
                 self.room_group_name = 'game_%s' % self.room_name
                 count = cache.get(self.room_group_name, 0)
@@ -61,7 +82,7 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                     text_data=json.dumps({"type": "playerNum", "playerNum": count})
                 )
                 async with self.update_lock:
-                    self.players[playerLen] = {
+                    self.players[MatchmakingConsumer.playerLen] = {
                         "userId": str(self.player.id),
                         "room_group_name": self.room_group_name,
                         "playerNum": count,
@@ -72,13 +93,14 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                     }
                 if count == 1:
                     opponent_index = next((index for index, player in enumerate(self.players.values()) if player["userId"] == opponent), None)
-                    asyncio.create_task(self.game_loop(player1_index=opponent_index, player2_index=playerLen))
+                    asyncio.create_task(self.game_loop(player1_index=opponent_index, player2_index=MatchmakingConsumer.playerLen))
                     await self.channel_layer.group_send(
                             self.room_group_name,
                             {
                                 "type": "game_start",
                             },
                         )
+                MatchmakingConsumer.playerLen += 1
 
 
                 
@@ -99,6 +121,7 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(
             self.room_group_name, self.channel_name
         )
+        cache.set(self.room_group_name, cache.get(self.room_group_name) - 1)
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
@@ -159,13 +182,11 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                             "type": "game_end",
                         },
                     )
-                    player1 =int(self.players[player1_index]["userId"])
-                    player2 = int(self.players[player2_index]["userId"])
+                    player1_id =int(self.players[player1_index]["userId"])
+                    player2_id = int(self.players[player2_index]["userId"])
                     score1 = int(self.players[player1_index]["score"])
                     score2 = int(self.players[player2_index]["score"])
-                    winner = int(player1 if score1 > score2 else player2)
-                    date = time.strftime('%Y-%m-%d %H:%M:%S')
-                    await game_save(player1, player2, score1, score2, winner)
+                    await game_save(player1_id, player2_id, score1, score2)
                     break
                 if self.players[player1_index]["upPressed"] and self.players[player1_index]["paddleY"] > 0:
                     self.players[player1_index]["paddleY"] -= 7
@@ -216,8 +237,11 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                     },
                 )
 
+
 class MatchmakingConsumer(AsyncWebsocketConsumer):
     players = {}
+    playerLen = 0
+    waiting_player = False
     ball_radius = 10
     paddle_height = 75
     canvas_width = 480
@@ -234,8 +258,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             self.player = await get_user(token_key[0])
             if self.player.is_authenticated:
                 await self.accept()
-                playerLen = len(self.players)
-                if (playerLen == 0 or self.players[playerLen - 1]["playerNum"] == 1):
+                # playerLen = len(self.players)
+                # print(playerLen)
+                if (MatchmakingConsumer.playerLen == 0 or MatchmakingConsumer.waiting_player == False):
                     self.room_group_name = 'matchmaking_%s' % str(self.player.id)
                     await self.channel_layer.group_add(
                         self.room_group_name,
@@ -245,7 +270,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         text_data=json.dumps({"type": "playerNum", "playerNum": 0})
                     )
                     async with self.update_lock:
-                        self.players[playerLen] = {
+                        self.players[MatchmakingConsumer.playerLen] = {
                             "userId": str(self.player.id),
                             "room_group_name": self.room_group_name,
                             "playerNum": 0,
@@ -254,8 +279,10 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             "downPressed": False,
                             "score": 0,
                         }
-                elif (playerLen > 0 and self.players[playerLen - 1]["playerNum"] == 0):
-                    opponent_index = playerLen - 1
+                    MatchmakingConsumer.playerLen += 1
+                    MatchmakingConsumer.waiting_player = True
+                elif (MatchmakingConsumer.playerLen > 0 and MatchmakingConsumer.waiting_player == True):
+                    opponent_index = MatchmakingConsumer.playerLen - 1
                     self.room_group_name = 'matchmaking_%s' % self.players[opponent_index]["userId"]
                     await self.channel_layer.group_add(
                         self.room_group_name,
@@ -265,7 +292,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         text_data=json.dumps({"type": "playerNum", "playerNum": 1})
                     )
                     async with self.update_lock:
-                        self.players[playerLen] = {
+                        self.players[MatchmakingConsumer.playerLen] = {
                             "userId": str(self.player.id),
                             "room_group_name": self.room_group_name,
                             "playerNum": 1,
@@ -274,13 +301,15 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             "downPressed": False,
                             "score": 0,
                         }
-                    asyncio.create_task(self.game_loop(player1_index=opponent_index, player2_index=playerLen))
                     await self.channel_layer.group_send(
                             self.room_group_name,
                             {
                                 "type": "game_start",
                             },
                         )
+                    asyncio.create_task(self.game_loop(player1_index=opponent_index, player2_index=MatchmakingConsumer.playerLen))
+                    MatchmakingConsumer.playerLen += 1
+                    MatchmakingConsumer.waiting_player = False
                 else:
                     await self.close()
             else:
@@ -343,6 +372,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             )
         )
         
+
     async def game_loop(self, player1_index, player2_index):
         x = self.canvas_width / 2
         y = self.canvas_height - 30
@@ -358,13 +388,12 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             "type": "game_end",
                         },
                     )
-                    player1 = self.players[player1_index]["userId"]
-                    player2 = self.players[player2_index]["userId"]
-                    score1 = self.players[player1_index]["score"]
-                    score2 = self.players[player2_index]["score"]
-                    winner = player1 if score1 > score2 else player2
-                    date = time.strftime('%Y-%m-%d %H:%M:%S')
-                    await game_save(player1, player2, score1, score2, winner, date)
+                    # print("Game Ended")
+                    player1_id =int(self.players[player1_index]["userId"])
+                    player2_id = int(self.players[player2_index]["userId"])
+                    score1 = int(self.players[player1_index]["score"])
+                    score2 = int(self.players[player2_index]["score"])
+                    await game_save(player1_id, player2_id, score1, score2)
                     break
                 if self.players[player1_index]["upPressed"] and self.players[player1_index]["paddleY"] > 0:
                     self.players[player1_index]["paddleY"] -= 7
