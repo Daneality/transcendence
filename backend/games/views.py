@@ -11,7 +11,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from rest_framework.exceptions import NotFound
 from user.models import GameInvite
-
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 
 class GameList(APIView):
@@ -111,11 +113,52 @@ class TournamentRegisterView(generics.UpdateAPIView):
         profile.tournament = tournament
         profile.save()
 
+        channel_layer = get_channel_layer()
+
         if tournament.players.count() == 4:
             players = list(tournament.players.all())
             GameInvite.objects.create(from_user=players[0], to_user=players[1])
             GameInvite.objects.create(from_user=players[2], to_user=players[3])
-
+            room_name = '_'.join(str(players[0].id))
+            room_group_name = 'notification_%s' % room_name
+            message = 'You have an invitation to join tournament game against %s, check your dashboard' % players[1].user.username
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'tournament_game_notification',
+                    'message': message,
+                }
+            )
+            room_name = '_'.join(str(players[1].id))
+            room_group_name = 'notification_%s' % room_name
+            message = 'You have an invitation to join tournament game against %s, check your dashboard' % players[0].user.username
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'tournament_game_notification',
+                    'message': message,
+                }
+            )
+            room_name = '_'.join(str(players[2].id))
+            room_group_name = 'notification_%s' % room_name
+            message = 'You have an invitation to join tournament game against %s, check your dashboard' % players[3].user.username
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'tournament_game_notification',
+                    'message': message,
+                }
+            )
+            room_name = '_'.join(str(players[3].id))
+            room_group_name = 'notification_%s' % room_name
+            message = 'You have an invitation to join tournament game against %s, check your dashboard' % players[2].user.username
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'tournament_game_notification',
+                    'message': message,
+                }
+            )
         return Response(self.get_serializer(tournament).data, status=status.HTTP_200_OK)
 
 # class GameList(generics.ListCreateAPIView):

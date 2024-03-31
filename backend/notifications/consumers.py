@@ -56,7 +56,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 'sender': self.sender.username
             }
         )
-
+ 
     # Receive message from room group
     async def chat_notification(self, event):
         message = event['message']
@@ -64,7 +64,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
             'message': message,
-            'sender': sender
+            'type': event['type']
         }))
     
     async def game_invite_notification(self, event):
@@ -72,7 +72,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
-            'message': message
+            'message': message,
+            'type': event['type']
         }))
 
     async def tournament_game_notification(self, event):
@@ -80,5 +81,6 @@ class NotificationConsumer(AsyncWebsocketConsumer):
 
         # Send message to WebSocket
         await self.send(text_data=json.dumps({
-            'message': message
+            'message': message,
+            'type': event['type']
         }))
