@@ -16,7 +16,9 @@ from . models import FriendRequest, GameInvite
 from . serializers import FriendRequestSerializer
 from chat.models import Chat
 from rest_framework.exceptions import ValidationError
-from rest_framework.exceptions import PermissionDenied
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
 
 
 # Create your views here.
@@ -160,6 +162,19 @@ class GameInviteCreateView(generics.CreateAPIView):
             serializer.save(from_user=from_user, from_user_id=from_user_id, to_user=to_user)
         except:
             raise ValidationError('You have already sent an invite to this user')
+        
+        room_name = '_'.join(str(to_user.user.id))
+        room_group_name = 'notification_%s' % room_name
+        message = 'You have an invitation to join the game against %s, check your dashboard' % from_user
+        channel_layer = get_channel_layer()
+        print(room_group_name)
+        async_to_sync(channel_layer.group_send)(
+            room_group_name,
+            {
+                'type': 'game_invite_notification',
+                'message': message,
+            }
+        )
 
 class GameInviteDeleteView(generics.DestroyAPIView):
     queryset = GameInvite.objects.all()
