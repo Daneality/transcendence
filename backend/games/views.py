@@ -117,10 +117,10 @@ class TournamentRegisterView(generics.UpdateAPIView):
 
         if tournament.players.count() == 4:
             players = list(tournament.players.all())
-            GameInvite.objects.create(from_user=players[0], to_user=players[1], from_user = "Tournament")
-            GameInvite.objects.create(from_user=players[1], to_user=players[0], from_user = "Tournament")
-            GameInvite.objects.create(from_user=players[2], to_user=players[3], from_user = "Tournament")
-            GameInvite.objects.create(from_user=players[3], to_user=players[2], from_user = "Tournament")
+            GameInvite.objects.create(to_user=players[1], from_user = "Tournament", from_user_id = players[0])
+            GameInvite.objects.create(to_user=players[0], from_user = "Tournament", from_user_id = players[1])
+            GameInvite.objects.create(to_user=players[3], from_user = "Tournament", from_user_id = players[2])
+            GameInvite.objects.create(to_user=players[2], from_user = "Tournament", from_user_id = players[3])
             channel_layer = get_channel_layer()
             room_name = '_'.join(str(players[0].id))
             room_group_name = 'notification_%s' % room_name
