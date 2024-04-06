@@ -104,6 +104,7 @@ class TournamentRegisterView(generics.UpdateAPIView):
 
     def update(self, request, *args, **kwargs):
         profile = self.request.user.profile
+
         if profile.tournament is not None:
             raise ValidationError('You are already registered in a tournament')
 
@@ -116,7 +117,9 @@ class TournamentRegisterView(generics.UpdateAPIView):
         channel_layer = get_channel_layer()
 
         if tournament.players.count() == 4:
+            
             players = list(tournament.players.all())
+            GameInvite.objects.filter(to_user__in=players).delete()
             GameInvite.objects.create(to_user=players[1], from_user = "Tournament", from_user_id = players[0])
             GameInvite.objects.create(to_user=players[0], from_user = "Tournament", from_user_id = players[1])
             GameInvite.objects.create(to_user=players[3], from_user = "Tournament", from_user_id = players[2])
