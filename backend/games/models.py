@@ -17,6 +17,24 @@ class Game(models.Model):
         ordering = ['created']
 
 
+
+    def save(self, *args, **kwargs):
+        # Call the "real" save() method.
+        super().save(*args, **kwargs)
+
+        # Update stats for the winner and loser.
+        if self.winner == 1:
+            winner = self.player1
+            loser = self.player2
+        else:
+            winner = self.player2
+            loser = self.player1
+        winner.wins += 1
+        loser.losses += 1
+        winner.save()
+        loser.save()
+
+
 class Tournament(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     name = models.CharField(max_length=255)
