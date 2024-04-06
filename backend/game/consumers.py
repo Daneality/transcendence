@@ -14,6 +14,9 @@ from django.contrib.auth.models import AnonymousUser
 from rest_framework.authtoken.models import Token
 from urllib.parse import parse_qs
 from django.core.cache import cache
+from user.models import GameInvite
+import random
+import math
 
 @database_sync_to_async
 def game_save(player1_id, player2_id, score1, score2):
@@ -28,6 +31,9 @@ def game_save(player1_id, player2_id, score1, score2):
     result.save()
     if (player1.tournament is not None):
         tournament = player1.tournament
+        print(tournament.game1)
+        print(tournament.game2)
+        print(tournament.game3)
         if (tournament.game1 is None):
             tournament.game1 = result
         elif (tournament.game2 is None):
@@ -36,6 +42,27 @@ def game_save(player1_id, player2_id, score1, score2):
             winner2 = tournament.game2.player1 if tournament.game2.winner == 1 else tournament.game2.player2
             GameInvite.objects.create(from_user = "tournament", to_user = winner1, from_user_id = winner2)
             GameInvite.objects.create(from_user = "tournament", to_user = winner2, from_user_id = winner1)
+            channel_layer = get_channel_layer()
+            room_name = '_'.join(str(players1.id))
+            room_group_name = 'notification_%s' % room_name
+            message = 'You have an invitation to join tournament final game against %s, check your dashboard' % players2.user.username
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'tournament_game_notification',
+                    'message': message,
+                }
+            )
+            room_name = '_'.join(str(players2.id))
+            room_group_name = 'notification_%s' % room_name
+            message = 'You have an invitation to join tournament final game against %s, check your dashboard' % players1.user.username
+            async_to_sync(channel_layer.group_send)(
+                room_group_name,
+                {
+                    'type': 'tournament_game_notification',
+                    'message': message,
+                }
+            )
         elif (tournament.game3 is None):
             tournament.game3 = result
         tournament.save()
@@ -54,8 +81,9 @@ def get_user(token_key):
 
 class PrivateGameConsumer(AsyncWebsocketConsumer):
 
+    player = None
     players = {}
-    playerLen = 0
+    # playerLen = 0
     ball_radius = 10
     paddle_height = 75
     canvas_width = 480
@@ -73,7 +101,7 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
             if self.player.is_authenticated:
                 await self.accept()
                 opponent = self.scope['url_route']['kwargs']['opponent']
-                # playerLen = len(self.players)
+                # playerLen = len(PrivateGameConsumer.players)
 
                 self.room_name = '_'.join(sorted([str(self.player.id), opponent]))
                 self.room_group_name = 'game_%s' % self.room_name
@@ -86,9 +114,9 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                 await self.send(
                     text_data=json.dumps({"type": "playerNum", "playerNum": count})
                 )
+                # print(PrivateGameConsumer.playerLen)
                 async with self.update_lock:
-                    self.players[MatchmakingConsumer.playerLen] = {
-                        "userId": str(self.player.id),
+                    PrivateGameConsumer.players[str(self.player.id)] = {
                         "room_group_name": self.room_group_name,
                         "playerNum": count,
                         "paddleY": (self.canvas_height - self.paddle_height) / 2,
@@ -97,16 +125,17 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                         "score": 0,
                     }
                 if count == 1:
-                    opponent_index = next((index for index, player in enumerate(self.players.values()) if player["userId"] == opponent), None)
-                    asyncio.create_task(self.game_loop(player1_index=opponent_index, player2_index=MatchmakingConsumer.playerLen))
+                    
+                    # print(opponent_index)
+                    asyncio.create_task(self.game_loop(player1Id=opponent, player2Id=str(self.player.id)))
                     await self.channel_layer.group_send(
                             self.room_group_name,
                             {
                                 "type": "game_start",
                             },
                         )
-                MatchmakingConsumer.playerLen += 1
-
+                
+                # PrivateGameConsumer.playerLen += 1
 
                 
             else:
@@ -118,10 +147,9 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         async with self.update_lock:
-            for player_id, player in self.players.items():
-                if player["userId"] == str(self.player.id):
-                    del self.players[player_id]
-                    break
+            if str(self.player.id) in PrivateGameConsumer.players:
+                del PrivateGameConsumer.players[str(self.player.id)]
+            # print(PrivateGameConsumer.players)
 
         await self.channel_layer.group_discard(
             self.room_group_name, self.channel_name
@@ -133,9 +161,9 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
         message_type = text_data_json.get("type", "")
         if message_type == 'game_update':
             playerNum = text_data_json["playerNum"]
-            player_index = next((index for index, player in self.players.items() if player["room_group_name"] == self.room_group_name and player["playerNum"] == playerNum), None)
-            self.players[player_index]["upPressed"] = text_data_json["upPressed"]
-            self.players[player_index]["downPressed"] = text_data_json["downPressed"]
+            player_index = next((index for index, player in PrivateGameConsumer.players.items() if player["room_group_name"] == self.room_group_name and player["playerNum"] == playerNum), None)
+            PrivateGameConsumer.players[player_index]["upPressed"] = text_data_json["upPressed"]
+            PrivateGameConsumer.players[player_index]["downPressed"] = text_data_json["downPressed"]
         else:
             pass
             
@@ -172,60 +200,72 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
             )
         )
         
-    async def game_loop(self, player1_index, player2_index):
+    async def game_loop(self, player1Id, player2Id):
         x = self.canvas_width / 2
-        y = self.canvas_height - 30
-        dx = 1
-        dy = -1
-        while len(self.players) > 1:
+        y = self.canvas_height / 2
+        speed = 1.5
+        angle = random.uniform(0, 2 * math.pi)
+        dx = speed * math.cos(angle)
+        dy = speed * math.sin(angle)
+        if abs(dx) < abs(dy):
+            dx, dy = dy, dx
+        while len(PrivateGameConsumer.players) > 1:
             await asyncio.sleep(0.01)
             async with self.update_lock:
-                if (self.players[player1_index]["score"] == 1 or self.players[player2_index]["score"] == 1):
+                if (PrivateGameConsumer.players[player1Id]["score"] == 1 or PrivateGameConsumer.players[player2Id]["score"] == 1):
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {
                             "type": "game_end",
                         },
                     )
-                    player1_id = int(self.players[player1_index]["userId"])
-                    player2_id = int(self.players[player2_index]["userId"])
-                    score1 = int(self.players[player1_index]["score"])
-                    score2 = int(self.players[player2_index]["score"])
+                    player1_id = int(player1Id)
+                    player2_id = int(player2Id)
+                    score1 = int(PrivateGameConsumer.players[player1Id]["score"])
+                    score2 = int(PrivateGameConsumer.players[player2Id]["score"])
                     await game_save(player1_id, player2_id, score1, score2)
                     break
-                if self.players[player1_index]["upPressed"] and self.players[player1_index]["paddleY"] > 0:
-                    self.players[player1_index]["paddleY"] -= 7
-                elif self.players[player1_index]["downPressed"] and self.players[player1_index]["paddleY"] < self.canvas_height - self.paddle_height:
-                    self.players[player1_index]["paddleY"] += 7
-                if self.players[player2_index]["upPressed"] and self.players[player2_index]["paddleY"] > 0:
-                    self.players[player2_index]["paddleY"] -= 7
-                elif self.players[player2_index]["downPressed"] and self.players[player2_index]["paddleY"] < self.canvas_height - self.paddle_height:
-                    self.players[player2_index]["paddleY"] += 7
+                if PrivateGameConsumer.players[player1Id]["upPressed"] and PrivateGameConsumer.players[player1Id]["paddleY"] > 0:
+                    PrivateGameConsumer.players[player1Id]["paddleY"] -= 7
+                elif PrivateGameConsumer.players[player1Id]["downPressed"] and PrivateGameConsumer.players[player1Id]["paddleY"] < self.canvas_height - self.paddle_height:
+                    PrivateGameConsumer.players[player1Id]["paddleY"] += 7
+                if PrivateGameConsumer.players[player2Id]["upPressed"] and PrivateGameConsumer.players[player2Id]["paddleY"] > 0:
+                    PrivateGameConsumer.players[player2Id]["paddleY"] -= 7
+                elif PrivateGameConsumer.players[player2Id]["downPressed"] and PrivateGameConsumer.players[player2Id]["paddleY"] < self.canvas_height - self.paddle_height:
+                    PrivateGameConsumer.players[player2Id]["paddleY"] += 7
                 if (y + dy > self.canvas_height - self.ball_radius or y + dy < self.ball_radius):
                     dy = -dy
                 if (x + dx < self.ball_radius):
-                    if (y > self.players[player1_index]["paddleY"] and y < self.players[player1_index]["paddleY"] + self.paddle_height):
-                        dx = -dx
+                    if (y > PrivateGameConsumer.players[player1Id]["paddleY"] and y < PrivateGameConsumer.players[player1Id]["paddleY"] + self.paddle_height):
+                        dx = -dx * 1.05
+                        dy = dy * 1.05
                     else:
-                        self.players[player2_index]["score"] += 1
+                        PrivateGameConsumer.players[player2Id]["score"] += 1
                         x = self.canvas_width / 2
-                        y = self.canvas_height - 30
-                        dx = 1
-                        dy = -1
-                        self.players[player1_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
-                        self.players[player2_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        y = self.canvas_height / 2
+                        angle = random.uniform(0, 2 * math.pi)
+                        dx = speed * math.cos(angle)
+                        dy = speed * math.sin(angle)
+                        if abs(dx) < abs(dy):
+                            dx, dy = dy, dx
+                        PrivateGameConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        PrivateGameConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
 
                 elif (x + dx > self.canvas_width - self.ball_radius):
-                    if (y > self.players[player2_index]["paddleY"] and y < self.players[player2_index]["paddleY"] + self.paddle_height):
-                        dx = -dx
+                    if (y > PrivateGameConsumer.players[player2Id]["paddleY"] and y < PrivateGameConsumer.players[player2Id]["paddleY"] + self.paddle_height):
+                        dx = -dx * 1.05
+                        dy = dy * 1.05
                     else:
-                        self.players[player1_index]["score"] += 1
+                        PrivateGameConsumer.players[player1Id]["score"] += 1
                         x = self.canvas_width / 2
-                        y = self.canvas_height - 30
-                        dx = 1
-                        dy = -1
-                        self.players[player1_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
-                        self.players[player2_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        y = self.canvas_height / 2
+                        angle = random.uniform(0, 2 * math.pi)
+                        dx = speed * math.cos(angle)
+                        dy = speed * math.sin(angle)
+                        if abs(dx) < abs(dy):
+                            dx, dy = dy, dx
+                        PrivateGameConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        PrivateGameConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                 x += dx
                 y += dy
 
@@ -235,12 +275,13 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                         "type": "game_update",
                         "x": x,
                         "y": y,
-                        "player1_paddleY": self.players[player1_index]["paddleY"],
-                        "player2_paddleY": self.players[player2_index]["paddleY"],
-                        "player1_score": self.players[player1_index]["score"],
-                        "player2_score": self.players[player2_index]["score"],
+                        "player1_paddleY": PrivateGameConsumer.players[player1Id]["paddleY"],
+                        "player2_paddleY": PrivateGameConsumer.players[player2Id]["paddleY"],
+                        "player1_score": PrivateGameConsumer.players[player1Id]["score"],
+                        "player2_score": PrivateGameConsumer.players[player2Id]["score"],
                     },
                 )
+
 
 
 class MatchmakingConsumer(AsyncWebsocketConsumer):
@@ -263,7 +304,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             self.player = await get_user(token_key[0])
             if self.player.is_authenticated:
                 await self.accept()
-                # playerLen = len(self.players)
+                # playerLen = len(MatchmakingConsumer.players)
                 # print(playerLen)
                 if (MatchmakingConsumer.playerLen == 0 or MatchmakingConsumer.waiting_player == False):
                     self.room_group_name = 'matchmaking_%s' % str(self.player.id)
@@ -275,7 +316,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         text_data=json.dumps({"type": "playerNum", "playerNum": 0})
                     )
                     async with self.update_lock:
-                        self.players[MatchmakingConsumer.playerLen] = {
+                        MatchmakingConsumer.players[MatchmakingConsumer.playerLen] = {
                             "userId": str(self.player.id),
                             "room_group_name": self.room_group_name,
                             "playerNum": 0,
@@ -288,7 +329,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                     MatchmakingConsumer.waiting_player = True
                 elif (MatchmakingConsumer.playerLen > 0 and MatchmakingConsumer.waiting_player == True):
                     opponent_index = MatchmakingConsumer.playerLen - 1
-                    self.room_group_name = 'matchmaking_%s' % self.players[opponent_index]["userId"]
+                    self.room_group_name = 'matchmaking_%s' % MatchmakingConsumer.players[opponent_index]["userId"]
                     await self.channel_layer.group_add(
                         self.room_group_name,
                         self.channel_name
@@ -297,7 +338,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         text_data=json.dumps({"type": "playerNum", "playerNum": 1})
                     )
                     async with self.update_lock:
-                        self.players[MatchmakingConsumer.playerLen] = {
+                        MatchmakingConsumer.players[MatchmakingConsumer.playerLen] = {
                             "userId": str(self.player.id),
                             "room_group_name": self.room_group_name,
                             "playerNum": 1,
@@ -312,7 +353,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                                 "type": "game_start",
                             },
                         )
-                    asyncio.create_task(self.game_loop(player1_index=opponent_index, player2_index=MatchmakingConsumer.playerLen))
+                    asyncio.create_task(self.game_loop(player1Id=opponent_index, player2Id=MatchmakingConsumer.playerLen))
                     MatchmakingConsumer.playerLen += 1
                     MatchmakingConsumer.waiting_player = False
                 else:
@@ -324,9 +365,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         
     async def disconnect(self, close_code):
         async with self.update_lock:
-            for player_id, player in self.players.items():
+            for player_id, player in MatchmakingConsumer.players.items():
                 if player["userId"] == str(self.player.id):
-                    del self.players[player_id]
+                    del MatchmakingConsumer.players[player_id]
                     break
 
         await self.channel_layer.group_discard(
@@ -338,9 +379,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         message_type = text_data_json.get("type", "")
         if message_type == 'game_update':
             playerNum = text_data_json["playerNum"]
-            player_index = next((index for index, player in self.players.items() if player["room_group_name"] == self.room_group_name and player["playerNum"] == playerNum), None)
-            self.players[player_index]["upPressed"] = text_data_json["upPressed"]
-            self.players[player_index]["downPressed"] = text_data_json["downPressed"]
+            player_index = next((index for index, player in MatchmakingConsumer.players.items() if player["room_group_name"] == self.room_group_name and player["playerNum"] == playerNum), None)
+            MatchmakingConsumer.players[player_index]["upPressed"] = text_data_json["upPressed"]
+            MatchmakingConsumer.players[player_index]["downPressed"] = text_data_json["downPressed"]
         else:
             pass
             
@@ -378,15 +419,19 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         )
         
 
-    async def game_loop(self, player1_index, player2_index):
+    async def game_loop(self, player1Id, player2Id):
         x = self.canvas_width / 2
-        y = self.canvas_height - 30
-        dx = 1
-        dy = -1
-        while len(self.players) > 1:
+        y = self.canvas_height / 2
+        speed = 1.5
+        angle = random.uniform(0, 2 * math.pi)
+        dx = speed * math.cos(angle)
+        dy = speed * math.sin(angle)
+        if abs(dx) < abs(dy):
+            dx, dy = dy, dx
+        while len(MatchmakingConsumer.players) > 1:
             await asyncio.sleep(0.01)
             async with self.update_lock:
-                if (self.players[player1_index]["score"] == 1 or self.players[player2_index]["score"] == 1):
+                if (MatchmakingConsumer.players[player1Id]["score"] == 3 or MatchmakingConsumer.players[player2Id]["score"] == 3):
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {
@@ -394,45 +439,53 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         },
                     )
                     # print("Game Ended")
-                    player1_id =int(self.players[player1_index]["userId"])
-                    player2_id = int(self.players[player2_index]["userId"])
-                    score1 = int(self.players[player1_index]["score"])
-                    score2 = int(self.players[player2_index]["score"])
+                    player1_id =int(MatchmakingConsumer.players[player1Id]["userId"])
+                    player2_id = int(MatchmakingConsumer.players[player2Id]["userId"])
+                    score1 = int(MatchmakingConsumer.players[player1Id]["score"])
+                    score2 = int(MatchmakingConsumer.players[player2Id]["score"])
                     await game_save(player1_id, player2_id, score1, score2)
                     break
-                if self.players[player1_index]["upPressed"] and self.players[player1_index]["paddleY"] > 0:
-                    self.players[player1_index]["paddleY"] -= 7
-                elif self.players[player1_index]["downPressed"] and self.players[player1_index]["paddleY"] < self.canvas_height - self.paddle_height:
-                    self.players[player1_index]["paddleY"] += 7
-                if self.players[player2_index]["upPressed"] and self.players[player2_index]["paddleY"] > 0:
-                    self.players[player2_index]["paddleY"] -= 7
-                elif self.players[player2_index]["downPressed"] and self.players[player2_index]["paddleY"] < self.canvas_height - self.paddle_height:
-                    self.players[player2_index]["paddleY"] += 7
+                if MatchmakingConsumer.players[player1Id]["upPressed"] and MatchmakingConsumer.players[player1Id]["paddleY"] > 0:
+                    MatchmakingConsumer.players[player1Id]["paddleY"] -= 10
+                elif MatchmakingConsumer.players[player1Id]["downPressed"] and MatchmakingConsumer.players[player1Id]["paddleY"] < self.canvas_height - self.paddle_height:
+                    MatchmakingConsumer.players[player1Id]["paddleY"] += 10
+                if MatchmakingConsumer.players[player2Id]["upPressed"] and MatchmakingConsumer.players[player2Id]["paddleY"] > 0:
+                    MatchmakingConsumer.players[player2Id]["paddleY"] -= 10
+                elif MatchmakingConsumer.players[player2Id]["downPressed"] and MatchmakingConsumer.players[player2Id]["paddleY"] < self.canvas_height - self.paddle_height:
+                    MatchmakingConsumer.players[player2Id]["paddleY"] += 10
                 if (y + dy > self.canvas_height - self.ball_radius or y + dy < self.ball_radius):
                     dy = -dy
                 if (x + dx < self.ball_radius):
-                    if (y > self.players[player1_index]["paddleY"] and y < self.players[player1_index]["paddleY"] + self.paddle_height):
-                        dx = -dx
+                    if (y > MatchmakingConsumer.players[player1Id]["paddleY"] and y < MatchmakingConsumer.players[player1Id]["paddleY"] + self.paddle_height):
+                        dx = -dx * 1.05
+                        dy = dy * 1.05
                     else:
-                        self.players[player2_index]["score"] += 1
+                        MatchmakingConsumer.players[player2Id]["score"] += 1
                         x = self.canvas_width / 2
-                        y = self.canvas_height - 30
-                        dx = 1
-                        dy = -1
-                        self.players[player1_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
-                        self.players[player2_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        y = self.canvas_height / 2
+                        angle = random.uniform(0, 2 * math.pi)
+                        dx = speed * math.cos(angle)
+                        dy = speed * math.sin(angle)
+                        if abs(dx) < abs(dy):
+                            dx, dy = dy, dx
+                        MatchmakingConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        MatchmakingConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
 
                 elif (x + dx > self.canvas_width - self.ball_radius):
-                    if (y > self.players[player2_index]["paddleY"] and y < self.players[player2_index]["paddleY"] + self.paddle_height):
-                        dx = -dx
+                    if (y > MatchmakingConsumer.players[player2Id]["paddleY"] and y < MatchmakingConsumer.players[player2Id]["paddleY"] + self.paddle_height):
+                        dx = -dx * 1.05
+                        dy = dy * 1.05
                     else:
-                        self.players[player1_index]["score"] += 1
+                        MatchmakingConsumer.players[player1Id]["score"] += 1
                         x = self.canvas_width / 2
-                        y = self.canvas_height - 30
-                        dx = 1
-                        dy = -1
-                        self.players[player1_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
-                        self.players[player2_index]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        y = self.canvas_height / 2
+                        angle = random.uniform(0, 2 * math.pi)
+                        dx = speed * math.cos(angle)
+                        dy = speed * math.sin(angle)
+                        if abs(dx) < abs(dy):
+                            dx, dy = dy, dx
+                        MatchmakingConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        MatchmakingConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                 x += dx
                 y += dy
 
@@ -442,9 +495,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         "type": "game_update",
                         "x": x,
                         "y": y,
-                        "player1_paddleY": self.players[player1_index]["paddleY"],
-                        "player2_paddleY": self.players[player2_index]["paddleY"],
-                        "player1_score": self.players[player1_index]["score"],
-                        "player2_score": self.players[player2_index]["score"],
+                        "player1_paddleY": MatchmakingConsumer.players[player1Id]["paddleY"],
+                        "player2_paddleY": MatchmakingConsumer.players[player2Id]["paddleY"],
+                        "player1_score": MatchmakingConsumer.players[player1Id]["score"],
+                        "player2_score": MatchmakingConsumer.players[player2Id]["score"],
                     },
                 )
