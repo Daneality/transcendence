@@ -10,9 +10,6 @@ COPY . .
 # Install the application dependencies
 RUN npm install
 
-# Build the app
-RUN npm run build
-
 
 # Install serve to serve the build folder
 RUN npm install -g serve
@@ -21,4 +18,4 @@ RUN npm install -g serve
 EXPOSE 3000
 
 # Command to run the application
-CMD ["serve", "-s", "build"]
+CMD ["/bin/sh", "-c", "npm run build && serve -s build"]
