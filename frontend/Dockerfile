@@ -4,17 +4,23 @@ FROM node:14
 # Set the working directory in the container to /app
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
+# Copy package.json and package-lock.json into the directory
 COPY package*.json ./
 
 # Install the application dependencies
 RUN npm install
 
-# Copy the rest of the application code to the working directory
+# Copy the rest of the application code into the container
 COPY . .
 
-# Expose port 3000 for the application
-EXPOSE 3000
+# Build the app
+RUN npm run build
 
-# Start the application
-CMD ["npm", "start"]
+# Install serve to serve the build folder
+RUN npm install -g serve
+
+# The app is served on port 5000 by default
+EXPOSE 5000
+
+# Command to run the application
+CMD ["serve", "-s", "build"]

@@ -95,7 +95,8 @@ const handleRegister = () => {
 
 	  fetch(backendURL, {
 		method: 'POST',
-		body: formData
+		body: formData,
+		redirect: 'follow'
 	  })
 	  .then(response => {
 		if (response.ok) {
