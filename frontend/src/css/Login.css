@@ -1,0 +1,21 @@
+.container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 60vh;
+  }
+  
+  input {
+	margin-bottom: 1px;
+	border-radius: 5px;
+	width: 200px;
+  }
+  
+  button {
+	margin-top: 10px;
+	width: 200px;
+	height: 20px;
+	border-radius: 20px;
+  }
+  

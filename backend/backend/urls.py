@@ -21,9 +21,9 @@ from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('games.urls')),
-    path('', include('user.urls')),
-    path('', include('chat.urls')),
-    path('game/', include('game.urls')),
+    path('api/', include('games.urls')),
+    path('api/', include('user.urls')),
+    path('api/', include('chat.urls')),
+    path('api/game/', include('game.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

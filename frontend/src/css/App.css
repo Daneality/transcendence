@@ -1,0 +1,29 @@
+header {
+	text-align: center; 
+}
+
+a {
+	cursor: auto; /* Verwendet den Standardmauszeiger */
+  }
+
+.start-page {
+	display: flex;
+	flex-direction: column;
+	justify-content: center; /* Zentriert vertikal */
+	align-items: center; /* Zentriert horizontal */
+	height: 100vh; /* Vollständige Höhe des Viewports */
+  }
+  
+  .button-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center; /* Zentriert horizontal */
+	margin-top: -200px;
+  }
+  
+  .button {
+	width: 200px;
+	height: 30px;
+	margin: 15px;
+	border-radius: 20px;
+  }

@@ -1,0 +1,94 @@
+/* Back-Button */
+.back-button {
+	width: 100px;
+	height: 30px;
+	margin: 15px;
+	border-radius: 20px;
+}
+
+.button-container {
+	display: flex;
+	flex-direction: column; /* Buttons vertikal anordnen */
+	justify-content: center; /* Zentrieren vertikal */
+	align-items: center; /* Zentrieren horizontal */
+	position: absolute; /* Positionierung relativ zum Elternelement */
+	top: 50%; /* Von oben um 50% des Elternelements verschieben */
+	left: 50%; /* Von links um 50% des Elternelements verschieben */
+	transform: translate(-50%, -50%); /* Zentrieren des Elternelements */
+  }
+
+.restart-button, .backtomenu-button{
+	width: 150px;
+	height: 30px;
+	margin: 10px;
+	border-radius: 20px;
+}  
+  
+  /* Score-Anzeige */
+  .score-display {
+	text-align: center;
+	color: rgb(76, 126, 76);
+	position: absolute;
+	left: 50%;
+	top: 5%;
+	padding: 10px 20px;
+	transform: translate(-50%, -50%);
+	font-size: 70px;
+  }
+  
+  /* Countdown-Anzeige */
+  .countdown-display {
+	text-align: center;
+	color: rgb(140, 52, 52);
+	position: absolute;
+	top: 25%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 70px;
+  }
+  
+  /* Ball */
+  .ball {
+	width: 20px;
+	height: 20px;
+	background-color: rgba(255, 0, 0, 0.49);
+	border-radius: 50%;
+	position: absolute;
+  }
+  
+  /* Paddles */
+  .paddle {
+	width: 20px;
+	height: 100px;
+	position: absolute;
+  }
+  
+  .left-paddle {
+	background-color: rgb(63, 63, 170);
+	top: 0;
+	left: 10px;
+  }
+  
+  .right-paddle {
+	background-color: rgb(46, 79, 46);
+	top: 0;
+	right: 10px;
+  }
+
+  .left-player-name, .right-player-name {
+	position: absolute;
+	top: 20px; /* Abstand von oben */
+	width: 100%;
+	text-align: center;
+	font-size: 40px; /* Größe des Namens */
+	font-family: Verdana, Geneva, Tahoma, sans-serif;
+  }
+  
+  .left-player-name {
+	left: 20%; /* Positionierung des linken Spielernamens */
+  }
+  
+  .right-player-name {
+	right: 20%; /* Positionierung des rechten Spielernamens */
+  }
+  

@@ -1,0 +1,8 @@
+Django
+djangorestframework
+django-cors-headers
+psycopg
+channels
+channels-redis
+daphne
+Pillow
