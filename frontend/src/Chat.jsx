@@ -9,7 +9,7 @@ const Chat = () => {
 	const [selectedFriend, setSelectedFriend] = useState(null);
 	const [chatData, setChatData] = useState(null);
 	const navigate = useNavigate();
-	const backendURL = 'http://localhost:8000/chats/'
+	const backendURL = 'https://localhost/api/chats/'
 
 	const messagesEndRef = useRef(null);
 
@@ -82,7 +82,7 @@ const Chat = () => {
 	  
 		// Open a new WebSocket connection
 		if (selectedFriend) {
-		  const newSocket = new WebSocket('ws://localhost:8000/ws/chat/' + selectedFriend.participant2.id + '/?token=' + localStorage.getItem('Token'));
+		  const newSocket = new WebSocket('wss://localhost/ws/chat/' + selectedFriend.participant2.id + '/?token=' + localStorage.getItem('Token'));
 		  
 		  newSocket.addEventListener('open', (event) => {
 			console.log('Server connection opened');
@@ -116,7 +116,7 @@ const Chat = () => {
 	  };
 
 	  const handleInviteClick = (friend) => {
-		const backURL = 'http://localhost:8000/game-invites/create/';
+		const backURL = 'https://localhost/api/game-invites/create/';
 
 		fetch(backURL, {
 			method: 'POST',

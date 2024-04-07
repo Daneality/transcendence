@@ -22,7 +22,7 @@ const OnlineGame = () => {
   const startGame = () => {
 	
 	const idd = localStorage.getItem('friendID');
-    const websocket = new WebSocket('ws://localhost:8000/ws/private_game/' + idd + '/?token=' + localStorage.getItem('Token'));
+    const websocket = new WebSocket('wss://localhost/ws/private_game/' + idd + '/?token=' + localStorage.getItem('Token'));
 	localStorage.removeItem('friendID');
     websocket.onopen = () => {
       console.log('WebSocket connection opened');

@@ -38,7 +38,7 @@ const handleLogin = () => {
 		return;
 	  }
 
-	  const backendURL = 'http://localhost:8000/login/';
+	  const backendURL = 'https://localhost/api/login/';
   fetch(backendURL, {
     method: 'POST',
     headers: {
@@ -91,7 +91,7 @@ const handleRegister = () => {
 		formData.append('password', password);
 		formData.append('password2', password);
 
-	  const backendURL = 'http://localhost:8000/register/';
+	  const backendURL = 'https://localhost/api/register/';
 
 	  fetch(backendURL, {
 		method: 'POST',

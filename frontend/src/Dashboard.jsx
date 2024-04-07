@@ -65,7 +65,7 @@ const Dashboard = (props) => {
       }
     }
   
-    fetch(`http://localhost:8000/users/${userData.id}/`, {
+    fetch(`https://localhost/api/users/${userData.id}/`, {
       method: 'PUT',
       headers: {
         'Authorization': `Token ${localStorage.getItem('Token')}`,
@@ -93,7 +93,7 @@ const Dashboard = (props) => {
   };
 
   function fetchUserData() {
-    const backendURL = 'http://localhost:8000/users/';
+    const backendURL = 'https://localhost/api/users/';
     const userId = localStorage.getItem('id');
   
     if (!userId) {
@@ -120,7 +120,7 @@ const Dashboard = (props) => {
   }
   
   useEffect(() => {
-    const backendURL = 'http://localhost:8000/users/';
+    const backendURL = 'https://localhost/api/users/';
     const userId = localStorage.getItem('id');
     
 
@@ -155,7 +155,7 @@ const Dashboard = (props) => {
   }, [id]);
 
   function addFriend() {
-    fetch('http://localhost:8000/friend-requests/', {
+    fetch('https://localhost/api/friend-requests/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ const Dashboard = (props) => {
   function acceptFriendRequest(requestId) {
 
 
-    fetch(`http://localhost:8000/friend-requests/${requestId}/accept/`, {
+    fetch(`https://localhost/api/friend-requests/${requestId}/accept/`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application  /json',   
@@ -226,7 +226,7 @@ const Dashboard = (props) => {
     const acceptInvite = (inviteId) => {
 
       localStorage.setItem('friendID', inviteId.from_user_id);
-      const backendURL = `http://localhost:8000/game-invites/delete/${inviteId.id}/`;
+      const backendURL = `https://localhost/api/game-invites/delete/${inviteId.id}/`;
       fetch(backendURL, {
         method: 'DELETE',
         headers: {
@@ -248,7 +248,7 @@ const Dashboard = (props) => {
     };
 
     const declineInvite = (inviteId) => {
-      const backendURL = `http://localhost:8000/game-invites/delete/${inviteId.id}/`;
+      const backendURL = `https://localhost/api/game-invites/delete/${inviteId.id}/`;
       fetch(backendURL, {
         method: 'DELETE',
         headers: {

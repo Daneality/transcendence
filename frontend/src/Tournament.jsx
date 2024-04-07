@@ -14,7 +14,6 @@ const Tournament = () => {
   const [winner, setWinner] = useState(null)
   const navigate = useNavigate();
 
-
   useEffect(() => {
     const tournamentStatus = localStorage.getItem('tournament');
     if (tournamentStatus === 'true') {
@@ -36,15 +35,16 @@ const Tournament = () => {
       setGameStarted(false);
     }
     else if (localStorage.getItem('winner_2') && !localStorage.getItem('t_winner')) {
-      setCurrentPairIndex(currentPairIndex + 1);
       const pairs = [localStorage.getItem('winner_1'), localStorage.getItem('winner_2')];
-      setPlayerPairs([...playerPairs, pairs]);
-      setGameStarted(false);}
-    // else if (localStorage.getItem('t_winner')) {
-    //   setWinner(localStorage.getItem('t_winner'));
-    //   setGameStarted(false);
-    // }
-
+      setPlayerPairs([pairs]);
+      setGameStarted(false);
+      setCurrentPairIndex(0);
+    }
+    else if (localStorage.getItem('t_winner')) {
+      setWinner(localStorage.getItem('t_winner'));
+      setGameStarted(false);
+    }
+    // eslint-disable-next-line
     }, []);
 
   const handleBack = () => {
@@ -89,6 +89,22 @@ const Tournament = () => {
     localStorage.setItem('playerPairs', JSON.stringify(pairs));
   };
 
+  const endT = () => {
+    localStorage.removeItem('winner_1');
+    localStorage.removeItem('winner_2'); 
+    localStorage.removeItem('t_winner');
+    localStorage.setItem('tournament', false);
+    localStorage.removeItem('playerPairs');
+    localStorage.removeItem('player1Name');
+    localStorage.removeItem('player2Name');
+    localStorage.removeItem('player3Name');
+    localStorage.removeItem('player4Name');
+    setTournamentStarted(false);
+    setWinner(null);
+    setCurrentPairIndex(0);
+    navigate('/');
+  }
+
   return (
     <div className="d-flex justify-content-center align-items-center vh-100">
       <div className="text-center">
@@ -98,6 +114,7 @@ const Tournament = () => {
               <div>
                 <h2>YOU WON!</h2>
                 <p>{winner}</p>
+                <Button className="btn btn-secondary mb-2" style={{ height:'25px', backgroundColor: '#000000', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center'}} variant="primary" onClick={endT}>kewl</Button>
               </div>
             ) : (
               <>
@@ -108,7 +125,7 @@ const Tournament = () => {
                   />
                 ) : (
                   <div>
-                    <h2>Match {currentPairIndex + 1}</h2>
+                    <h2>  {localStorage.getItem('winner_1') && localStorage.getItem('winner_2') ? 'Final' : `Match ${currentPairIndex + 1}`}</h2>
                     <p>{playerPairs[currentPairIndex][0]} VS {playerPairs[currentPairIndex][1]}</p>
                     <Button className="btn btn-secondary mb-2" style={{ height:'25px', backgroundColor: '#000000', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center'}} variant="primary" onClick={handleStartGame}>start game</Button>
                   </div>

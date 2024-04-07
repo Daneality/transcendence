@@ -23,7 +23,7 @@ function App() {
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    const newSocket = new WebSocket('ws://localhost:8000/ws/notification/?token=' + localStorage.getItem('Token'));
+    const newSocket = new WebSocket('wss://localhost/ws/notification/?token=' + localStorage.getItem('Token'));
     setSocket(newSocket);
 
     return () => {
@@ -44,7 +44,6 @@ function App() {
       }, 5000);
     };
   }, [socket]);
-
 
   return (
     <Router>

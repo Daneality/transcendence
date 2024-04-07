@@ -23,7 +23,7 @@ const OnlineGame = () => {
 
   const startGame = () => {
 	
-    const websocket = new WebSocket('ws://localhost:8000/ws/matchmaking/' + '/?token=' + localStorage.getItem('Token'));
+    const websocket = new WebSocket('wss://localhost/ws/matchmaking/' + '/?token=' + localStorage.getItem('Token'));
     websocket.onopen = () => {
       console.log('WebSocket connection opened');
     };

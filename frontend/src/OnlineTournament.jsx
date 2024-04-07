@@ -7,7 +7,7 @@ import { Button, Card, Container } from 'react-bootstrap';
 
 const OnlineTournament = (props) => {
 	const [notification, setNotification] = useState(null);
-	const backendURL = 'http://localhost:8000/tournaments/'
+	const backendURL = 'https://localhost/api/tournaments/'
 	const [tournaments, setTournaments] = useState([]);
 	const [userData, setUserData] = useState({});
 	const navigate = useNavigate();
@@ -35,7 +35,7 @@ const OnlineTournament = (props) => {
 	}, []);
 
 	const fetchUserData = () => {
-		const backendURL = 'http://localhost:8000/users/';
+		const backendURL = 'https://localhost/api/users/';
     	const userId = localStorage.getItem('id');
 		const requestURL = `${backendURL}${userId}/`;
 		fetch(requestURL, {
@@ -112,7 +112,7 @@ const OnlineTournament = (props) => {
 		}
 
 	const registerToAnTournament = (tournamentId) => {
-		fetch(`http://localhost:8000/tournaments/register/${tournamentId}/`, {
+		fetch(`https://localhost/api/tournaments/register/${tournamentId}/`, {
 			method: 'PUT',
 			headers: {
 			  'Content-Type': 'application	json',

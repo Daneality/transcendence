@@ -34,9 +34,11 @@ const PingPongGameT = ({ player1, player2}) => {
     if (gameOver) {
       if (!localStorage.getItem('winner_1')) {
         localStorage.setItem('winner_1', winner);
+        console.log(localStorage.getItem('winner_1'));
        }
        else if (!localStorage.getItem('winner_2')) {
         localStorage.setItem('winner_2', winner);
+        console.log(localStorage.getItem('winner_2'));
        } 
        else {
         localStorage.setItem('t_winner', winner);
