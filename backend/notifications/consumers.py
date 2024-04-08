@@ -84,3 +84,21 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             'message': message,
             'type': event['type']
         }))
+    
+    async def opponent_disconnected_notification(self, event):
+        message = event['message']
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps({
+            'message': message,
+            'type': event['type']
+        }))
+    
+    async def game_result_notification(self, event):
+        message = event['message']
+
+        # Send message to WebSocket
+        await self.send(text_data=json.dumps({
+            'message': message,
+            'type': event['type']
+        }))
