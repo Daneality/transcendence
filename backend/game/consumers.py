@@ -448,6 +448,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         async with self.update_lock:
             if str(self.player.id) in MatchmakingConsumer.players:
                 MatchmakingConsumer.players[str(self.player.id)]["connected"] = False
+            if (self.waiting_player_id == str(self.player.id)):
+                MatchmakingConsumer.waiting_player = False
+                MatchmakingConsumer.waiting_player_id = None
 
         await self.channel_layer.group_discard(
             self.room_group_name, self.channel_name
