@@ -89,8 +89,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
     # playerLen = 0
     ball_radius = 10
     paddle_height = 75
-    canvas_width = 480
-    canvas_height = 480
+    canvas_width = 800
+    canvas_height = 600
 
     update_lock = asyncio.Lock()
 
@@ -377,8 +377,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
     waiting_player_id = None
     ball_radius = 10
     paddle_height = 75
-    canvas_width = 480
-    canvas_height = 480
+    canvas_width = 800
+    canvas_height = 600
 
     update_lock = asyncio.Lock()
 
@@ -680,8 +680,8 @@ class AIConsumer(AsyncWebsocketConsumer):
     bot = None
     ball_radius = 10
     paddle_height = 75
-    canvas_width = 480
-    canvas_height = 480
+    canvas_width = 800
+    canvas_height = 600
     x = 0
     y = 0
     speed = 0
