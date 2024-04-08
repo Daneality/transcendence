@@ -284,7 +284,7 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                     room_name = '_'.join(str(player1Id))
                     room_group_name = 'notification_%s' % room_name
                     result = 'won' if PrivateGameConsumer.players[str(player1_id)]["score"] > PrivateGameConsumer.players[str(player1Id)]["score"] else 'lost'
-                    message = 'You %s the game against the opponent' % result
+                    message = 'You %s the game against %s' % (result, User.objects.get(id=int(player2Id)).username)
                     await channel_layer.group_send(
                         room_group_name,
                         {
@@ -295,7 +295,7 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                     room_name = '_'.join(str(player2Id))
                     room_group_name = 'notification_%s' % room_name
                     result = 'won' if PrivateGameConsumer.players[str(player2Id)]["score"] > PrivateGameConsumer.players[str(player1Id)]["score"] else 'lost'
-                    message = 'You %s the game against the opponent' % result
+                    message = 'You %s the game against %s' % (result, User.objects.get(id=int(player1Id)).username)
                     await channel_layer.group_send(
                         room_group_name,
                         {
@@ -587,7 +587,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                     room_name = '_'.join(str(player1Id))
                     room_group_name = 'notification_%s' % room_name
                     result = 'won' if MatchmakingConsumer.players[player1Id]["score"] > MatchmakingConsumer.players[player2Id]["score"] else 'lost'
-                    message = 'You %s the game against %s' % (result, player2Id)
+                    message = 'You %s the game against %s' % (result, User.objects.get(id=int(player2Id)).username)
                     await channel_layer.group_send(
                         room_group_name,
                         {
@@ -599,7 +599,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                     room_group_name = 'notification_%s' % room_name
                     result = 'won' if MatchmakingConsumer.players[player2Id]["score"] > MatchmakingConsumer.players[player1Id]["score"] else 'lost'
                     opponent = Profile.objects.get(user=User.objects.get(id=player2Id))
-                    message = 'You %s the game against %s' % (result, player1Id)
+                    message = 'You %s the game against %s' % (result, User.objects.get(id=player1Id).username)
                     await channel_layer.group_send(
                         room_group_name,
                         {
