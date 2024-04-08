@@ -210,8 +210,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-        dx = self.speed * math.sin(self.angle)
-        dy = self.speed * math.cos(self.angle)
+        dx = speed * math.sin(self.angle)
+        dy = speed * math.cos(self.angle)
         while len(PrivateGameConsumer.players) > 1:
             await asyncio.sleep(0.01)
             async with self.update_lock:
@@ -327,8 +327,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
                         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
                         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-                        dx = self.speed * math.sin(angle)
-                        dy = self.speed * math.cos(angle)  
+                        dx = speed * math.sin(angle)
+                        dy = speed * math.cos(angle)  
                         PrivateGameConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                         PrivateGameConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
 
@@ -343,8 +343,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
                         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
                         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-                        dx = self.speed * math.sin(angle)
-                        dy = self.speed * math.cos(angle)
+                        dx = speed * math.sin(angle)
+                        dy = speed * math.cos(angle)
                         PrivateGameConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                         PrivateGameConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                 x += dx
@@ -508,8 +508,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-        dx = self.speed * math.sin(angle)
-        dy = self.speed * math.cos(angle)
+        dx = speed * math.sin(angle)
+        dy = speed * math.cos(angle)
         while len(MatchmakingConsumer.players) > 1:
             await asyncio.sleep(0.01)
             async with self.update_lock:
@@ -627,8 +627,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
                         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
                         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-                        dx = self.speed * math.sin(angle)
-                        dy = self.speed * math.cos(angle)
+                        dx = speed * math.sin(angle)
+                        dy = speed * math.cos(angle)
                         MatchmakingConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                         MatchmakingConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
 
@@ -643,8 +643,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
                         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
                         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-                        dx = self.speed * math.sin(angle)
-                        dy = self.speed * math.cos(angle)
+                        dx = speed * math.sin(angle)
+                        dy = speed * math.cos(angle)
                         MatchmakingConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                         MatchmakingConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                 x += dx
