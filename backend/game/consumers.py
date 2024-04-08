@@ -110,6 +110,7 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                 self.room_group_name = 'game_%s' % self.room_name
                 count = cache.get(self.room_group_name, 0)
                 cache.set(self.room_group_name, count + 1)
+                print(count)
                 await self.channel_layer.group_add(
                     self.room_group_name,
                     self.channel_name
@@ -216,8 +217,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-        dx = speed * math.sin(self.angle)
-        dy = speed * math.cos(self.angle)
+        dx = speed * math.sin(angle)
+        dy = speed * math.cos(angle)
         while len(PrivateGameConsumer.players) > 1:
             await asyncio.sleep(0.01)
             async with self.update_lock:
@@ -751,7 +752,7 @@ class AIConsumer(AsyncWebsocketConsumer):
     async def bot_update(self):
         previous_y = self.y
         previous_x = self.x
-        previous_dx = 0
+        # previous_dx = 0
         previous_dy = 0
         # dx = 0
         # dy = 0
@@ -774,6 +775,7 @@ class AIConsumer(AsyncWebsocketConsumer):
                 dy = previous_dy
             else:
                 dy = self.y - previous_y
+            print(dy)
             # previous_dx = dx
             previous_dy = dy
             previous_x = self.x
@@ -811,7 +813,7 @@ class AIConsumer(AsyncWebsocketConsumer):
             async with self.update_lock:
                 if (self.player["connected"] == False or self.player["score"] == 3 or self.bot["score"] == 3):
                     break
-                print(self.calc_y)
+                # print(self.calc_y)
                 if self.move == True:
                     if self.calc_y < self.bot["paddleY"]:
                         self.bot["upPressed"] = True
