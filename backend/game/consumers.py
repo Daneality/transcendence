@@ -132,10 +132,13 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                     
                     # print(opponent_index)
                     asyncio.create_task(self.game_loop(player1Id=opponent, player2Id=str(self.player.id)))
+
                     await self.channel_layer.group_send(
                             self.room_group_name,
                             {
                                 "type": "game_start",
+                                "player1_name": User.objects.get(id=int(opponent)).username,
+                                "player2_name": User.objects.get(id=int(self.player.id)).username,
                             },
                         )
                 
@@ -190,6 +193,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps(
                 {
                     "type": "game_start",
+                    "player1_name": event["player1_name"],
+                    "player2_name": event["player2_name"],
                 }
             )
         )
@@ -432,6 +437,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             self.room_group_name,
                             {
                                 "type": "game_start",
+                                "player1_name": User.objects.get(id=int(opponent_index)).username,
+                                "player2_name": User.objects.get(id=int(self.player.id)).username,
                             },
                         )
                     asyncio.create_task(self.game_loop(player1Id=opponent_index, player2Id=str(self.player.id)))
@@ -487,6 +494,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
             text_data=json.dumps(
                 {
                     "type": "game_start",
+                    "player1_name": event["player1_name"],
+                    "player2_name": event["player2_name"],
                 }
             )
         )
@@ -589,6 +598,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                     room_name = '_'.join(str(player2Id))
                     room_group_name = 'notification_%s' % room_name
                     result = 'won' if MatchmakingConsumer.players[player2Id]["score"] > MatchmakingConsumer.players[player1Id]["score"] else 'lost'
+                    opponent = Profile.objects.get(user=User.objects.get(id=player2Id))
                     message = 'You %s the game against %s' % (result, player1Id)
                     await channel_layer.group_send(
                         room_group_name,
