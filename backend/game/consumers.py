@@ -268,7 +268,7 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                     del PrivateGameConsumer.players[str(player1_id)]
                     del PrivateGameConsumer.players[str(player2_id)]
                     break
-                if (self.player["score"] == 3 or self.bot["score"] == 3):
+                if (PrivateGameConsumer.players[player1Id]["score"] == 3 or PrivateGameConsumer.players[player2Id]["score"] == 3):
                     await self.channel_layer.group_send(
                         self.room_group_name,
                         {
@@ -276,10 +276,10 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                         },
                     )
                     channel_layer = get_channel_layer()
-                    room_name = '_'.join(str(self.player.id))
+                    room_name = '_'.join(str(player1Id))
                     room_group_name = 'notification_%s' % room_name
-                    result = 'won' if self.player["score"] > self.bot["score"] else 'lost'
-                    message = 'You %s the game against %s' % (result, self.bot["userId"])
+                    result = 'won' if PrivateGameConsumer.players[str(player1_id)]["score"] > PrivateGameConsumer.players[str(player1Id)]["score"] else 'lost'
+                    message = 'You %s the game against the opponent' % result
                     await channel_layer.group_send(
                         room_group_name,
                         {
@@ -287,10 +287,10 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                             'message': message,
                         }
                     )
-                    room_name = '_'.join(str(self.bot["userId"]))
+                    room_name = '_'.join(str(player2Id))
                     room_group_name = 'notification_%s' % room_name
-                    result = 'won' if self.bot["score"] > self.player["score"] else 'lost'
-                    message = 'You %s the game against %s' % (result, self.player["userId"])
+                    result = 'won' if PrivateGameConsumer.players[str(player2Id)]["score"] > PrivateGameConsumer.players[str(player1Id)]["score"] else 'lost'
+                    message = 'You %s the game against the opponent' % result
                     await channel_layer.group_send(
                         room_group_name,
                         {
@@ -300,53 +300,53 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                     )
                     player1_id = int(player1Id)
                     player2_id = int(player2Id)
-                    score1 = int(self.player["score"])
-                    score2 = int(self.bot["score"])
+                    score1 = int(PrivateGameConsumer.players[str(player1Id)]["score"])
+                    score2 = int(PrivateGameConsumer.players[str(player2Id)]["score"])
                     await game_save(player1_id, player2_id, score1, score2)
                     del PrivateGameConsumer.players[str(player1_id)]
                     del PrivateGameConsumer.players[str(player2_id)]
                     break
-                if self.player["upPressed"] and self.player["paddleY"] > 0:
-                    self.player["paddleY"] -= 7
-                elif self.player["downPressed"] and self.player["paddleY"] < self.canvas_height - self.paddle_height:
-                    self.player["paddleY"] += 7
-                if self.bot["upPressed"] and self.bot["paddleY"] > 0:
-                    self.bot["paddleY"] -= 7
-                elif self.bot["downPressed"] and self.bot["paddleY"] < self.canvas_height - self.paddle_height:
-                    self.bot["paddleY"] += 7
+                if PrivateGameConsumer.players[player1Id]["upPressed"] and PrivateGameConsumer.players[player1Id]["paddleY"] > 0:
+                    PrivateGameConsumer.players[player1Id]["paddleY"] -= 7
+                elif PrivateGameConsumer.players[player1Id]["downPressed"] and PrivateGameConsumer.players[player1Id]["paddleY"] < self.canvas_height - self.paddle_height:
+                    PrivateGameConsumer.players[player1Id]["paddleY"] += 7
+                if PrivateGameConsumer.players[player2Id]["upPressed"] and PrivateGameConsumer.players[player2Id]["paddleY"] > 0:
+                    PrivateGameConsumer.players[player2Id]["paddleY"] -= 7
+                elif PrivateGameConsumer.players[player2Id]["downPressed"] and PrivateGameConsumer.players[player2Id]["paddleY"] < self.canvas_height - self.paddle_height:
+                    PrivateGameConsumer.players[player2Id]["paddleY"] += 7
                 if (y + dy > self.canvas_height - self.ball_radius or y + dy < self.ball_radius):
                     dy = -dy
                 if (x + dx < self.ball_radius):
-                    if (y > self.player["paddleY"] and y < self.player["paddleY"] + self.paddle_height):
+                    if (y > PrivateGameConsumer.players[player1Id]["paddleY"] and y < PrivateGameConsumer.players[player1Id]["paddleY"] + self.paddle_height):
                         dx = -dx * 1.05
                         dy = dy * 1.05
                     else:
-                        self.bot["score"] += 1
+                        PrivateGameConsumer.players[player1Id]["score"] += 1
                         x = self.canvas_width / 2
                         y = self.canvas_height / 2
                         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
                         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
                         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-                        dx = self.speed * math.sin(self.angle)
-                        dy = self.speed * math.cos(self.angle)  
-                        self.player["paddleY"] = (self.canvas_height - self.paddle_height) / 2
-                        self.bot["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        dx = self.speed * math.sin(angle)
+                        dy = self.speed * math.cos(angle)  
+                        PrivateGameConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        PrivateGameConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
 
                 elif (x + dx > self.canvas_width - self.ball_radius):
-                    if (y > self.bot["paddleY"] and y < self.bot["paddleY"] + self.paddle_height):
+                    if (y > PrivateGameConsumer.players[player2Id]["paddleY"] and y < PrivateGameConsumer.players[player2Id]["paddleY"] + self.paddle_height):
                         dx = -dx * 1.05
                         dy = dy * 1.05
                     else:
-                        self.player["score"] += 1
+                        PrivateGameConsumer.players[player2Id]["score"] += 1
                         x = self.canvas_width / 2
                         y = self.canvas_height / 2
                         angle1 = random.uniform(0.67 * math.pi, 0.8 * math.pi)
                         angle2 = random.uniform(0.2 * math.pi, 0.33 * math.pi)
                         angle = random.choice([angle1, angle2]) + random.choice([0, math.pi])
-                        dx = self.speed * math.sin(self.angle)
-                        dy = self.speed * math.cos(self.angle)
-                        self.player["paddleY"] = (self.canvas_height - self.paddle_height) / 2
-                        self.bot["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        dx = self.speed * math.sin(angle)
+                        dy = self.speed * math.cos(angle)
+                        PrivateGameConsumer.players[player1Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                        PrivateGameConsumer.players[player2Id]["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                 x += dx
                 y += dy
 
@@ -356,10 +356,10 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                         "type": "game_update",
                         "x": x,
                         "y": y,
-                        "player1_paddleY": self.player["paddleY"],
-                        "player2_paddleY": self.bot["paddleY"],
-                        "player1_score": self.player["score"],
-                        "player2_score": self.bot["score"],
+                        "player1_paddleY": PrivateGameConsumer.players[player1Id]["paddleY"],
+                        "player2_paddleY": PrivateGameConsumer.players[player2Id]["paddleY"],
+                        "player1_score": PrivateGameConsumer.players[player1Id]["score"],
+                        "player2_score": PrivateGameConsumer.players[player2Id]["score"],
                     },
                 )
 
