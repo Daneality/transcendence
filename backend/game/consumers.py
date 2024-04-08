@@ -137,8 +137,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
                             self.room_group_name,
                             {
                                 "type": "game_start",
-                                "player1_name": User.objects.get(id=int(opponent)).username,
-                                "player2_name": User.objects.get(id=int(self.player.id)).username,
+                                "player1_name": str(User.objects.get(id=int(opponent)).username),
+                                "player2_name": str(User.objects.get(id=int(self.player.id)).username),
                             },
                         )
                 
@@ -437,8 +437,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             self.room_group_name,
                             {
                                 "type": "game_start",
-                                "player1_name": User.objects.get(id=int(opponent_index)).username,
-                                "player2_name": User.objects.get(id=int(self.player.id)).username,
+                                "player1_name": str(User.objects.get(id=int(opponent_index)).username),
+                                "player2_name": str(User.objects.get(id=int(self.player.id)).username),
                             },
                         )
                     asyncio.create_task(self.game_loop(player1Id=opponent_index, player2Id=str(self.player.id)))
