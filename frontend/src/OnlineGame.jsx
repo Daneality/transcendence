@@ -98,11 +98,11 @@ const OnlineGame = (props) => {
   useEffect(() => {
     document.addEventListener('keydown', keyDownHandler);
     document.addEventListener('keyup', keyUpHandler);
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     return () => {
       document.removeEventListener('keydown', keyDownHandler);
       document.removeEventListener('keyup', keyUpHandler);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      
     };
     // eslint-disable-next-line
   }, []);

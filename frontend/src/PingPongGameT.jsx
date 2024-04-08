@@ -26,6 +26,7 @@ const PingPongGameT = ({ player1, player2}) => {
       setGameOver(true);
       setWinner(player1);
     } else if (score.right >=2){
+      setGameOver(true);
       setWinner(player2)
     }
   };
