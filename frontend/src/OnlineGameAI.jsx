@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 
-const OnlineGame = (props) => {
+const OnlineGameAI = (props) => {
   const PADDLE_WIDTH = 10;
   const PADDLE_HEIGHT = 75;
   const [players, setPlayers] = useState([
@@ -36,7 +36,7 @@ const OnlineGame = (props) => {
 
   useEffect(() => {
 // eslint-disable-next-line
-    const websocket = new WebSocket('wss://localhost/ws/matchmaking/' + '/?token=' + localStorage.getItem('Token'));
+    const websocket = new WebSocket('wss://localhost/ws/ai/' + '/?token=' + localStorage.getItem('Token'));
     setWebsocket(websocket);
     websocket.onopen = () => {
       console.log('WebSocket connection opened');
@@ -58,10 +58,10 @@ const OnlineGame = (props) => {
       } else if (message.type === 'game_start') {
         console.log('Received game_start:', message);
         if (playerNum === 1) {
-          setPlayerNames([message.player2_name , message.player1_name]);
+          setPlayerNames([message.player2_name , "AI"]);
         }
         else {
-          setPlayerNames([message.player1_name , message.player2_name]);
+          setPlayerNames(["AI" , message.player2_name]);
         }
         setGameStarted(true);
         console.log(message.player1_name, message.player2_name);
@@ -128,20 +128,16 @@ const OnlineGame = (props) => {
   const keyDownHandler = (e) => {
     if (e.code === 'ArrowUp') {
       setPlayers((prevPlayers) => [{ ...prevPlayers[0], upPressed: true }, prevPlayers[1]]);
-      console.log('up pressed');
     } else if (e.code === 'ArrowDown') {
       setPlayers((prevPlayers) => [{ ...prevPlayers[0], downPressed: true }, prevPlayers[1]]);
-      console.log('down pressed');
     }
   };
 
   const keyUpHandler = (e) => {
     if (e.code === 'ArrowUp') {
       setPlayers((prevPlayers) => [{ ...prevPlayers[0], upPressed: false }, prevPlayers[1]]);
-      console.log('up released');
     } else if (e.code === 'ArrowDown') {
       setPlayers((prevPlayers) => [{ ...prevPlayers[0], downPressed: false }, prevPlayers[1]]);
-      console.log('down released');
     }
   };
 
@@ -159,7 +155,7 @@ const OnlineGame = (props) => {
   };
 
   return (
-    <div style={{ position: 'relative', height: 480 + 'px', width: 480 + 'px' }}>
+    <div style={{ position: 'absolute', height: 600 + 'px', width: 800 + 'px', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#808080' }}>
        {notification && (
         <div className="notification" style={{position: 'fixed', top: '0', right: '0', backgroundColor: 'lightblue', padding: '10px'}}>
           {notification.message}
@@ -187,18 +183,18 @@ const OnlineGame = (props) => {
           ></div>
           {/* Paddle 1 */}
           <div
-            className="paddle" style={{ position: 'absolute', top: `${players[0].paddleY}px`, left: '0px',  width: `${PADDLE_WIDTH}px`,}}
+            className="paddle" style={{ position: 'absolute', top: `${players[0].paddleY}px`, left: '5px',  width: `${PADDLE_WIDTH}px`, height: `${PADDLE_HEIGHT}px`, backgroundColor: '#0095DD'}}
           ></div>
           {/* Paddle 2 */}
           <div
             className="paddle"
-            style={{ position: 'absolute', top: `${players[1].paddleY}px`, right: '0px', width: `${PADDLE_WIDTH}px`, height: `${PADDLE_HEIGHT}px`, backgroundColor: '#0095DD',}}
+            style={{ position: 'absolute', top: `${players[1].paddleY}px`, right: '-10px', width: `${PADDLE_WIDTH}px`, height: `${PADDLE_HEIGHT}px`, backgroundColor: '#0095DD',}}
           ></div>
           {/* Score */}
           <div
             style={{ position: 'fixed',	top: '10px', left: '50%',	transform: 'translateX(-50%)',	color: '#000',	fontSize: '20px', fontWeight: 'bold',}}
           >
-            {playerNames[0]} {players[0].score} : {players[1].score} {playerNames[1]}
+            {playerNames[1]} {players[0].score} : {players[1].score} {playerNames[0]}
           </div>
         </>
       )}
@@ -206,4 +202,4 @@ const OnlineGame = (props) => {
   );
 };
 
-export default OnlineGame;
+export default OnlineGameAI;

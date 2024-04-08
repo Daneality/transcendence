@@ -3,15 +3,31 @@ import { ListGroup, ListGroupItem, Button } from 'react-bootstrap';
 /* eslint-disable */
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 
-const Chat = () => {
+const Chat = (props) => {
 	const [message, setMessage] = useState('');
 	const [socket, setSocket] = useState(null);
 	const [selectedFriend, setSelectedFriend] = useState(null);
 	const [chatData, setChatData] = useState(null);
 	const navigate = useNavigate();
 	const backendURL = 'https://localhost/api/chats/'
+	const [notification, setNotification] = useState(null);
 
 	const messagesEndRef = useRef(null);
+
+	const {notesocket} = props;
+
+	useEffect(() => {
+	  if (notesocket == null) return;
+  
+	  notesocket.onmessage = (event) => {
+		const data = JSON.parse(event.data);
+		console.log(data);
+		setNotification(data);
+		setTimeout(() => {
+		  setNotification(null);
+		}, 5000);
+	  };
+	}, [notesocket]);
 
 	const scrollToBottom = () => {
 	messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -136,10 +152,32 @@ const Chat = () => {
 		navigate(`/OnlineGame/`);
 	  };
 
+	  const handleBlockUser = (friend) => {
+		const backURL = 'https://localhost/api/users/' + friend.id + '/block';
+		fetch(backURL, {	
+			method: 'PUT',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Token ${localStorage.getItem('Token')}`
+			},
+		})
+		.then(response => response.json())
+		.then(data => {	
+		})
+		.catch((error) => {
+			console.error('Error:', error);
+		});
+
+	  }
 
 	  return (
 		<div className="row">
 		  <div className="col-md-4">
+		  {notification && (
+			<div className="notification" style={{position: 'fixed', top: '0', right: '0', backgroundColor: 'lightblue', padding: '10px'}}>
+				{notification.message}
+			</div>
+			)}
 		  <button className="btn btn-secondary mb-2" style={{ height:'30px', backgroundColor: '#000000', color: '#ffffff'}}onClick={backtoMenu}>back to profile</button>
 			<h3>friends</h3>
 			<ListGroup>
@@ -151,6 +189,7 @@ const Chat = () => {
 					>
 					{chat.participant2.username}
 					<Button variant="primary" className="btn btn-secondary mb-2" style={{ height:'25px', backgroundColor: '#000000', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center'}}onClick={(e) => {e.stopPropagation(); handleInviteClick(chat.participant2);}}>invite to a game</Button>
+					<Button variant="primary" className="btn btn-secondary mb-2" style={{ height:'25px', backgroundColor: '#000000', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center'}}onClick={(e) => {e.stopPropagation(); handleBlockUser(chat.participant2);}}>block user</Button>
 					</ListGroupItem>
 				)) : "Loading..."}
 				</ListGroup>

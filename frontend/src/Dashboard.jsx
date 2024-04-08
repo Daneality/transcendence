@@ -23,7 +23,6 @@ const Dashboard = (props) => {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-
       console.log(data);
       setNotification(data);
       setTimeout(() => {
@@ -271,11 +270,15 @@ const Dashboard = (props) => {
     
     return (
       <div className="container mt-5">
-        {notification && <div className="notification" style={{position: 'fixed', top: 0, right: 0, backgroundColor: 'lightblue', padding: '10px'}}>{notification.message}</div>}
+        {notification && (
+        <div className="notification" style={{position: 'fixed', top: '0', right: '0', backgroundColor: 'lightblue', padding: '10px'}}>
+          {notification.message}
+        </div>
+        )}
         {userData && !isEditingProfile ? (
           <>
           <div style={{ display: 'flex', justifyContent: 'space-between', flexDirection: 'row', height: '100vh'}}>
-            <Card style={{ flex: '1', width: '30vw', paddingTop: '1rem', maxHeight: '50vh'}}>
+            <Card style={{ flex: '1', width: '30vw', paddingTop: '1rem', maxHeight: '36vh'}}>
               
               <Card.Body style={{ overflow: 'auto', maxHeight: '100%'}}>
               <Card.Img variant="top" src={userData.profile.image} style={{ objectFit: 'contain', maxHeight: '50%' }} />
@@ -288,7 +291,7 @@ const Dashboard = (props) => {
               </Card.Body>
               </Card>
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <Card style={{ flex: '1', width: '30vw', paddingTop: '1rem', maxHeight: '50%'}}>
+              <Card style={{ flex: '1', width: '30vw', paddingTop: '1rem', maxHeight: '18vh'}}>
               <CardTitle>Friends</CardTitle>
               <Card.Body style={{ overflow: 'auto', maxHeight: '100%'}}>
                 <ul>
@@ -313,7 +316,7 @@ const Dashboard = (props) => {
               {userData.profile.is_current_user && (
               <Card style={{ flex: '1', width: '30vw', paddingTop: '1rem'}}>
                 <CardTitle>Game Invites</CardTitle>
-                <Card.Body style={{ overflow: 'auto', maxHeight: '100%'}}>
+                <Card.Body style={{ overflow: 'auto', maxHeight: '18vh'}}>
                   <div >
                     {userData.profile.game_invites_received.map((invite, index) => (
                       <div key={index}>
@@ -332,7 +335,7 @@ const Dashboard = (props) => {
               </div>
               <Card style={{ flex: '1', width: '30vw', paddingTop: '2rem'}}>
                 <CardTitle>Game History</CardTitle>
-                <Card.Body style={{ overflow: 'auto', maxHeight: '100%', display: 'flex', flexDirection: 'column' }}>
+                <Card.Body style={{ overflow: 'auto', maxHeight: '36vh', display: 'flex', flexDirection: 'column' }}>
                 <ul style={{ flex: 1, display: 'flex', flexDirection: 'column', width: '100%' }}>
                   {userData.profile.games.map((game, index) => (
                     <li key={index} style={{ flex: 1, width: '100%' }}>

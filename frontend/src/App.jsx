@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react';
 import OnlineTournament from './OnlineTournament';
 import OnlineGameM from './OnlineGameM';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import OnlineGameAI from './OnlineGameAI';
 
 function App() {
   const [notification, setNotification] = useState(null);
@@ -48,7 +49,11 @@ function App() {
   return (
     <Router>
       <div className="App">
-      {notification && <div className="notification" style={{position: 'fixed', top: 0, right: 0, backgroundColor: 'lightblue', padding: '10px'}}>{notification.message}</div>}
+      {notification && (
+  <div className="notification" style={{position: 'fixed', top: '0', right: '0', backgroundColor: 'lightblue', padding: '10px'}}>
+    {notification.message}
+  </div>
+)}
         <Routes>
           <Route
             path="/"
@@ -82,6 +87,11 @@ function App() {
                         online game
                       </button>
                     </Link>)}
+                    {isLoggedIn && (<Link to="/OnlineGameAI">
+                      <button className="btn btn-primary m-2" style={{width: '18rem', height: '2rem', backgroundColor: '#000000', color: '#ffffff'}}>
+                        game vs AI
+                      </button>
+                    </Link>)}
                     <Link to="/tournament">
                       <button className="btn btn-primary m-2" style={{width: '18rem', height: '2rem', backgroundColor: '#000000', color: '#ffffff'}}>
                         local tournament
@@ -106,6 +116,7 @@ function App() {
           <Route path="/OnlineGame" element={<OnlineGame socket={socket} />} />
           <Route path='/onlineTournament' element={<OnlineTournament socket={socket} />} />
           <Route path="/OnlineGameM" element={<OnlineGameM socket={socket} />} />
+          <Route path="/OnlineGameAI" element={<OnlineGameAI socket={socket} />} />
         </Routes>
       </div>
     </Router>
