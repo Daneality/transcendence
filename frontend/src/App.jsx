@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Link} from 'react-router-dom';
 import PingPongGame from './PingPongGame';
 import Tournament from './Tournament';
