@@ -367,8 +367,8 @@ class PrivateGameConsumer(AsyncWebsocketConsumer):
 
 class MatchmakingConsumer(AsyncWebsocketConsumer):
     players = {}
-    playerLen = 0
     waiting_player = False
+    waiting_player_id = None
     ball_radius = 10
     paddle_height = 75
     canvas_width = 480
@@ -387,7 +387,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                 await self.accept()
                 # playerLen = len(MatchmakingConsumer.players)
                 # print(playerLen)
-                if (MatchmakingConsumer.playerLen == 0 or MatchmakingConsumer.waiting_player == False):
+                if (MatchmakingConsumer.waiting_player == False):
                     self.room_group_name = 'matchmaking_%s' % str(self.player.id)
                     await self.channel_layer.group_add(
                         self.room_group_name,
@@ -397,8 +397,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         text_data=json.dumps({"type": "playerNum", "playerNum": 0})
                     )
                     async with self.update_lock:
-                        MatchmakingConsumer.players[MatchmakingConsumer.playerLen] = {
-                            "userId": str(self.player.id),
+                        MatchmakingConsumer.players[str(self.player.id)] = {
                             "room_group_name": self.room_group_name,
                             "connected": True,
                             "playerNum": 0,
@@ -407,11 +406,11 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             "downPressed": False,
                             "score": 0,
                         }
-                    MatchmakingConsumer.playerLen += 1
                     MatchmakingConsumer.waiting_player = True
-                elif (MatchmakingConsumer.playerLen > 0 and MatchmakingConsumer.waiting_player == True):
-                    opponent_index = MatchmakingConsumer.playerLen - 1
-                    self.room_group_name = 'matchmaking_%s' % MatchmakingConsumer.players[opponent_index]["userId"]
+                    MatchmakingConsumer.waiting_player_id = str(self.player.id)
+                elif (MatchmakingConsumer.waiting_player == True):
+                    opponent_index = MatchmakingConsumer.waiting_player_id
+                    self.room_group_name = 'matchmaking_%s' % opponent_index
                     await self.channel_layer.group_add(
                         self.room_group_name,
                         self.channel_name
@@ -420,8 +419,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         text_data=json.dumps({"type": "playerNum", "playerNum": 1})
                     )
                     async with self.update_lock:
-                        MatchmakingConsumer.players[MatchmakingConsumer.playerLen] = {
-                            "userId": str(self.player.id),
+                        MatchmakingConsumer.players[str(self.player.id)] = {
                             "room_group_name": self.room_group_name,
                             "connected": True,
                             "playerNum": 1,
@@ -436,9 +434,9 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                                 "type": "game_start",
                             },
                         )
-                    asyncio.create_task(self.game_loop(player1Id=opponent_index, player2Id=MatchmakingConsumer.playerLen))
-                    MatchmakingConsumer.playerLen += 1
+                    asyncio.create_task(self.game_loop(player1Id=opponent_index, player2Id=str(self.player.id)))
                     MatchmakingConsumer.waiting_player = False
+                    MatchmakingConsumer.waiting_player_id = None
                 else:
                     await self.close()
             else:
@@ -448,10 +446,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
         
     async def disconnect(self, close_code):
         async with self.update_lock:
-            for player_id, player in MatchmakingConsumer.players.items():
-                if player["userId"] == str(self.player.id):
-                    MatchmakingConsumer.players[player_id]["connected"] = False
-                    break
+            if str(self.player.id) in MatchmakingConsumer.players:
+                MatchmakingConsumer.players[str(self.player.id)]["connected"] = False
 
         await self.channel_layer.group_discard(
             self.room_group_name, self.channel_name
@@ -522,7 +518,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         },
                     )
                     channel_layer = get_channel_layer()
-                    room_name = '_'.join(str(MatchmakingConsumer.players[player2Id]["userId"]))
+                    room_name = '_'.join(str(player2Id))
                     room_group_name = 'notification_%s' % room_name
                     message = 'Your opponent has disconnected'
                     await channel_layer.group_send(
@@ -532,8 +528,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             'message': message,
                         }
                     )
-                    player1_id = int(MatchmakingConsumer.players[player1Id]["userId"])
-                    player2_id = int(MatchmakingConsumer.players[player2Id]["userId"])
+                    player1_id = int(player1Id)
+                    player2_id = int(player2Id)
                     score1 = int(MatchmakingConsumer.players[player1Id]["score"])
                     score2 = 3
                     await game_save(player1_id, player2_id, score1, score2)
@@ -549,7 +545,7 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         },
                     )
                     channel_layer = get_channel_layer()
-                    room_name = '_'.join(str(MatchmakingConsumer.players[player1Id]["userId"]))
+                    room_name = '_'.join(str(player1Id))
                     room_group_name = 'notification_%s' % room_name
                     message = 'Your opponent has disconnected'
                     await channel_layer.group_send(
@@ -559,8 +555,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             'message': message,
                         }
                     )
-                    player1_id = int(MatchmakingConsumer.players[player1Id]["userId"])
-                    player2_id = int(MatchmakingConsumer.players[player2Id]["userId"])
+                    player1_id = int(player1Id)
+                    player2_id = int(player2Id)
                     score1 = 3
                     score2 = int(MatchmakingConsumer.players[player2Id]["score"])
                     await game_save(player1_id, player2_id, score1, score2)
@@ -576,10 +572,10 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                         },
                     )
                     channel_layer = get_channel_layer()
-                    room_name = '_'.join(str(MatchmakingConsumer.players[player1Id]["userId"]))
+                    room_name = '_'.join(str(player1Id))
                     room_group_name = 'notification_%s' % room_name
                     result = 'won' if MatchmakingConsumer.players[player1Id]["score"] > MatchmakingConsumer.players[player2Id]["score"] else 'lost'
-                    message = 'You %s the game against %s' % (result, MatchmakingConsumer.players[player2Id]["userId"])
+                    message = 'You %s the game against %s' % (result, player2Id)
                     await channel_layer.group_send(
                         room_group_name,
                         {
@@ -587,10 +583,10 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             'message': message,
                         }
                     )
-                    room_name = '_'.join(str(MatchmakingConsumer.players[player2Id]["userId"]))
+                    room_name = '_'.join(str(player2Id))
                     room_group_name = 'notification_%s' % room_name
                     result = 'won' if MatchmakingConsumer.players[player2Id]["score"] > MatchmakingConsumer.players[player1Id]["score"] else 'lost'
-                    message = 'You %s the game against %s' % (result, MatchmakingConsumer.players[player1Id]["userId"])
+                    message = 'You %s the game against %s' % (result, player1Id)
                     await channel_layer.group_send(
                         room_group_name,
                         {
@@ -598,8 +594,8 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                             'message': message,
                         }
                     )
-                    player1_id =int(MatchmakingConsumer.players[player1Id]["userId"])
-                    player2_id = int(MatchmakingConsumer.players[player2Id]["userId"])
+                    player1_id =int(player1Id)
+                    player2_id = int(player2Id)
                     score1 = int(MatchmakingConsumer.players[player1Id]["score"])
                     score2 = int(MatchmakingConsumer.players[player2Id]["score"])
                     await game_save(player1_id, player2_id, score1, score2)
@@ -740,8 +736,8 @@ class AIConsumer(AsyncWebsocketConsumer):
     async def bot_update(self):
         previous_y = self.y
         previous_x = self.x
-        # previous_dx = 0
-        # previous_dy = 0
+        previous_dx = 0
+        previous_dy = 0
         # dx = 0
         # dy = 0
         while True:
@@ -757,7 +753,14 @@ class AIConsumer(AsyncWebsocketConsumer):
             # previous_dx = dx if dx >= previous_dx else previous_dx
             # previous_dy = dy if dy >= previous_dy else previous_dy
             dx = self.x - previous_x
-            dy = self.y - previous_y
+            if previous_dy > 0 and self.y < previous_dy:
+                dy = previous_dy
+            elif previous_dy < 0 and self.canvas_height - self.y < abs(previous_dy):
+                dy = previous_dy
+            else:
+                dy = self.y - previous_y
+            # previous_dx = dx
+            previous_dy = dy
             previous_x = self.x
             previous_y = self.y
             x = self.x
@@ -770,7 +773,7 @@ class AIConsumer(AsyncWebsocketConsumer):
                     time_y = distance_y / abs(dy)                                             
                     if time_y < time_x:
                         x = x + dx * time_y
-                        y = self.canvas_height - self.ball_radius if dy > 0 else ball_radius
+                        y = self.canvas_height - self.ball_radius if dy > 0 else self.ball_radius
                         dy = -dy
                         distance_x = self.canvas_width - x
                         time_x = distance_x / dx
