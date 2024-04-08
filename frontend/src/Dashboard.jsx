@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardTitle} from 'react-bootstrap';
-import { BrowserRouter as useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Dashboard = (props) => {
   const [userData, setUserData] = useState(null);

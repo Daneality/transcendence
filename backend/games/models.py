@@ -29,8 +29,8 @@ class Game(models.Model):
         else:
             winner = self.player2
             loser = self.player1
-        winner.wins += 1
-        loser.losses += 1
+        winner.games_won += 1
+        loser.games_lost += 1
         winner.save()
         loser.save()
 
