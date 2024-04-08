@@ -174,7 +174,6 @@ const PingPongGameT = ({ player1, player2}) => {
 
   return (
     <div className="ball-game-container">
-      {!gameOver && (<button className="back-button" onClick={handleBack}>menu</button>)}
       <div className='button-container'>
       {gameOver && (<button className='backtomenu-button' onClick={handleBack}>menu</button>)}
       {gameOver && (<button className='restart-button' onClick={restartGame}>restart</button>)}

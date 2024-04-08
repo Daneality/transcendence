@@ -159,7 +159,7 @@ const OnlineGame = (props) => {
   };
 
   return (
-    <div style={{ position: 'relative', height: 480 + 'px', width: 480 + 'px' }}>
+    <div style={{ position: 'absolute', height: 600 + 'px', width: 800 + 'px', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#808080'}}>
        {notification && (
         <div className="notification" style={{position: 'fixed', top: '0', right: '0', backgroundColor: 'lightblue', padding: '10px'}}>
           {notification.message}
@@ -187,7 +187,7 @@ const OnlineGame = (props) => {
           ></div>
           {/* Paddle 1 */}
           <div
-            className="paddle" style={{ position: 'absolute', top: `${players[0].paddleY}px`, left: '0px',  width: `${PADDLE_WIDTH}px`,}}
+            className="paddle" style={{ position: 'absolute', top: `${players[0].paddleY}px`, left: '0px',  width: `${PADDLE_WIDTH}px`, height: `${PADDLE_HEIGHT}px`, backgroundColor: '#0095DD'}}
           ></div>
           {/* Paddle 2 */}
           <div

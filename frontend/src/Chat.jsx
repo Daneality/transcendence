@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ListGroup, ListGroupItem, Button } from 'react-bootstrap';
-/* eslint-disable */
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as useNavigate } from 'react-router-dom';
 
 const Chat = (props) => {
 	const [message, setMessage] = useState('');
@@ -11,14 +10,11 @@ const Chat = (props) => {
 	const navigate = useNavigate();
 	const backendURL = 'https://localhost/api/chats/'
 	const [notification, setNotification] = useState(null);
-
 	const messagesEndRef = useRef(null);
-
 	const {notesocket} = props;
 
 	useEffect(() => {
 	  if (notesocket == null) return;
-  
 	  notesocket.onmessage = (event) => {
 		const data = JSON.parse(event.data);
 		console.log(data);
@@ -37,12 +33,8 @@ const Chat = (props) => {
 
 	const handleSendMessage = () => {
 		if (message !== '') {
-		  // Check if the WebSocket connection is open
 		  if (socket && socket.readyState === WebSocket.OPEN) {
-			// Send the message
 			socket.send(JSON.stringify({ message: message }));
-	  
-			// Clear the message input
 			setMessage('');
 		  } else {
 			console.error('Cannot send message, WebSocket connection is not open');
@@ -51,12 +43,11 @@ const Chat = (props) => {
 	  };
 	
 	const reloadData = () => {
-
 		fetch(backendURL, {
 			method: 'GET',
 			headers: {
 			  'Content-Type': 'application/json',
-			  'Authorization': `Token ${localStorage.getItem('Token')}` // Include the token in the Authorization header
+			  'Authorization': `Token ${localStorage.getItem('Token')}`
 			},
 		  })
 		  .then(response => response.json())
@@ -78,7 +69,7 @@ const Chat = (props) => {
 		  method: 'GET',
 		  headers: {
 			'Content-Type': 'application/json',
-			'Authorization': `Token ${localStorage.getItem('Token')}` // Include the token in the Authorization header
+			'Authorization': `Token ${localStorage.getItem('Token')}`
 		  },
 		})
 		.then(response => response.json())
@@ -88,50 +79,42 @@ const Chat = (props) => {
 		.catch((error) => {
 		  console.error('Error:', error);
 		});
-	  }, []); // Empty array means this effect runs once on mount
+	  }, []);
 	  
-	  useEffect(() => {
-		// Close the previous WebSocket connection
+	useEffect(() => {
 		if (socket) {
 		  socket.close();
 		}
-	  
-		// Open a new WebSocket connection
 		if (selectedFriend) {
 		  const newSocket = new WebSocket('wss://localhost/ws/chat/' + selectedFriend.participant2.id + '/?token=' + localStorage.getItem('Token'));
-		  
 		  newSocket.addEventListener('open', (event) => {
 			console.log('Server connection opened');
 		  });
-	  
 		  newSocket.addEventListener('message', (event) => {
 			reloadData();
 		  });
-	  
 		  newSocket.addEventListener('close', (event) => {
 			console.log('Server connection closed: ', event.code);
 		  });
-	  
 		  newSocket.addEventListener('error', (event) => {
 			console.error('WebSocket error: ', event);
 		  });
-	  
 		  setSocket(newSocket);
 		}
 	  }, [selectedFriend]);
 
-	  const handleFriendClick = (chat) => {
+	const handleFriendClick = (chat) => {
 		setSelectedFriend(chat);
 	  };
 
-	  const backtoMenu = () => {	
+	const backtoMenu = () => {	
 		if (socket) {
 			socket.close();
 		  }
 		navigate(`/dashboard/${localStorage.getItem('id')}/`);
 	  };
 
-	  const handleInviteClick = (friend) => {
+	const handleInviteClick = (friend) => {
 		const backURL = 'https://localhost/api/game-invites/create/';
 
 		fetch(backURL, {
@@ -152,7 +135,7 @@ const Chat = (props) => {
 		navigate(`/OnlineGame/`);
 	  };
 
-	  const handleBlockUser = (friend) => {
+	const handleBlockUser = (friend) => {
 		const backURL = 'https://localhost/api/users/' + friend.id + '/block';
 		fetch(backURL, {	
 			method: 'PUT',
@@ -170,7 +153,7 @@ const Chat = (props) => {
 
 	  }
 
-	  return (
+	return (
 		<div className="row">
 		  <div className="col-md-4">
 		  {notification && (

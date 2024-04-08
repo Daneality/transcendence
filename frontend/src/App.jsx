@@ -26,7 +26,6 @@ function App() {
     if (!isLoggedIn) return;
     const newSocket = new WebSocket('wss://localhost/ws/notification/?token=' + localStorage.getItem('Token'));
     setSocket(newSocket);
-
     return () => {
       newSocket.close();
     };
@@ -34,10 +33,8 @@ function App() {
 
   useEffect(() => {
     if (socket == null) return;
-
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-
       console.log(data);
       setNotification(data);
       setTimeout(() => {
@@ -50,10 +47,10 @@ function App() {
     <Router>
       <div className="App">
       {notification && (
-  <div className="notification" style={{position: 'fixed', top: '0', right: '0', backgroundColor: 'lightblue', padding: '10px'}}>
-    {notification.message}
-  </div>
-)}
+        <div className="notification" style={{position: 'fixed', top: '0', right: '0', backgroundColor: 'lightblue', padding: '10px'}}>
+          {notification.message}
+        </div>
+      )}
         <Routes>
           <Route
             path="/"

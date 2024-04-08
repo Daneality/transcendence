@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardTitle} from 'react-bootstrap';
-/* eslint-disable */
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as useNavigate } from 'react-router-dom';
 
 const Dashboard = (props) => {
-  const [userData, setUserData] = useState(null); // Zustand für Benutzerdaten
+  const [userData, setUserData] = useState(null);
   let { id } = useParams();
   const navigate = useNavigate();
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -49,11 +48,11 @@ const Dashboard = (props) => {
         [event.target.name]: event.target.files[0],
       });
     } else {
-      setNewProfileData({
-        ...newProfileData,
-        [event.target.name]: event.target.value,
-      });
-    }
+        setNewProfileData({
+          ...newProfileData,
+          [event.target.name]: event.target.value,
+        });
+      }
   };
 
   const handleProfileUpdate = () => {
@@ -106,7 +105,7 @@ const Dashboard = (props) => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Token ${localStorage.getItem('Token')}` // Include the token in the Authorization header
+        'Authorization': `Token ${localStorage.getItem('Token')}`
       },
     })
     .then(response => response.json())
@@ -121,20 +120,16 @@ const Dashboard = (props) => {
   useEffect(() => {
     const backendURL = 'https://localhost/api/users/';
     const userId = localStorage.getItem('id');
-    
-
     if (!userId) {
       console.error('Benutzer-ID nicht im localStorage gefunden');
       return;
     }
-
     const requestURL = `${backendURL}${id}/`;
-
     fetch(requestURL, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Token ${localStorage.getItem('Token')}` // Include the token in the Authorization header
+        'Authorization': `Token ${localStorage.getItem('Token')}`
       },
     })
     .then(response => {
@@ -145,7 +140,7 @@ const Dashboard = (props) => {
       }
     })
     .then(data => {
-      setUserData(data); // Benutzerdaten im Zustand speichern
+      setUserData(data);
     })
     .catch(error => {
       console.error('Fehler beim Senden der Registrierungsdaten:', error);
@@ -158,7 +153,7 @@ const Dashboard = (props) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Token ${localStorage.getItem('Token')}` // Include the token in the Authorization header
+        'Authorization': `Token ${localStorage.getItem('Token')}`
       },
       body: JSON.stringify({
         'from_user': parseInt(localStorage.getItem('id'), 10),
@@ -180,33 +175,25 @@ const Dashboard = (props) => {
   }
 
   function acceptFriendRequest(requestId) {
-
-
     fetch(`https://localhost/api/friend-requests/${requestId}/accept/`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application  /json',   
-        'Authorization': `Token ${localStorage.getItem('Token')}` // Include the token in the Authorization header  
+        'Authorization': `Token ${localStorage.getItem('Token')}` 
       },  
     })
     fetchUserData();
     window.location.reload();
-
-
-    // Send a request to the backend to accept the friend request
-    // Then fetch the userData again to update the list of friend requests
   }
   const handleBack = () => {
-  
-     
-      navigate('/'); // Navigiere zur Startseite, wenn der "Zurück"-Button geklickt wird
+      navigate('/');
       window.location.reload();
     };
   
     const handleOut = () => {
       localStorage.removeItem('Token'); 
       localStorage.removeItem('id');
-      navigate('/'); // Navigiere zur Startseite, wenn der "Zurück"-Button geklickt wird
+      navigate('/');
       window.location.reload();
     };
 
@@ -223,7 +210,6 @@ const Dashboard = (props) => {
     };
 
     const acceptInvite = (inviteId) => {
-
       localStorage.setItem('friendID', inviteId.from_user_id);
       const backendURL = `https://localhost/api/game-invites/delete/${inviteId.id}/`;
       fetch(backendURL, {
@@ -232,15 +218,12 @@ const Dashboard = (props) => {
           'Content-Type': 'application/json',
           'Authorization': `Token ${localStorage.getItem('Token')}` // Include the token in the Authorization header
         },
-        })
-        .then(response => {
-        window.location.reload();
-        })
-  
-        .then(data => {
-        
-        })
-        .catch((error) => {
+      })
+      .then(response => {
+      window.location.reload();
+      })
+      .then(data => { })
+      .catch((error) => {
         console.error('Error:', error);
         });
 		  navigate(`/OnlineGame/`);
@@ -252,20 +235,16 @@ const Dashboard = (props) => {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Token ${localStorage.getItem('Token')}` // Include the token in the Authorization header
+          'Authorization': `Token ${localStorage.getItem('Token')}`
         },
-        })
-        .then(response => {
-        window.location.reload();
-        })
-  
-        .then(data => {
-        
-        })
-        .catch((error) => {
+      })
+      .then(response => {
+      window.location.reload();
+      })
+      .then(data => {})
+      .catch((error) => {
         console.error('Error:', error);
-        });
-      
+      });
     };
     
     return (
