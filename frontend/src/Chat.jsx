@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ListGroup, ListGroupItem, Button } from 'react-bootstrap';
-import { BrowserRouter as useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const Chat = (props) => {
 	const [message, setMessage] = useState('');

@@ -128,20 +128,16 @@ const OnlineGame = (props) => {
   const keyDownHandler = (e) => {
     if (e.code === 'ArrowUp') {
       setPlayers((prevPlayers) => [{ ...prevPlayers[0], upPressed: true }, prevPlayers[1]]);
-      console.log('up pressed');
     } else if (e.code === 'ArrowDown') {
       setPlayers((prevPlayers) => [{ ...prevPlayers[0], downPressed: true }, prevPlayers[1]]);
-      console.log('down pressed');
     }
   };
 
   const keyUpHandler = (e) => {
     if (e.code === 'ArrowUp') {
       setPlayers((prevPlayers) => [{ ...prevPlayers[0], upPressed: false }, prevPlayers[1]]);
-      console.log('up released');
     } else if (e.code === 'ArrowDown') {
       setPlayers((prevPlayers) => [{ ...prevPlayers[0], downPressed: false }, prevPlayers[1]]);
-      console.log('down released');
     }
   };
 
