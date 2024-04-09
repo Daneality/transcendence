@@ -66,7 +66,8 @@ const handleLogin = () => {
 	localStorage.setItem('id', id);
 
 	// Weiterleiten oder andere Aktionen ausführen
-	navigate(`/dashboard/${id}/`);
+	navigate('/');
+	window.location.reload();
   })
   .catch(error => {
     // Fehlerbehandlung, falls ein Fehler auftritt
@@ -110,7 +111,8 @@ const handleRegister = () => {
 		const id = data.user.id;
 		localStorage.setItem('Token', token);
 		localStorage.setItem('id', id);
-		navigate(`/dashboard/${id}/`);
+		navigate('/');
+		window.location.reload();
 	  })
 	  .catch(error => {
 		console.error('Fehler beim Senden der Registrierungsdaten:', error);
