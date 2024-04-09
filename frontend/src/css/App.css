@@ -27,3 +27,20 @@ a {
 	margin: 15px;
 	border-radius: 20px;
   }
+
+  .notification {
+	position: fixed;
+	top: 0;
+	right: 0;
+	background-color: lightblue;
+	padding: 10px;
+  }
+
+  .btn {
+	width: 18rem;
+	height: 2rem;
+	background-color: black;
+	color: white;
+  }
+  
+  

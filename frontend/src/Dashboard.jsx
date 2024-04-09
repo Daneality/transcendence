@@ -226,6 +226,7 @@ const Dashboard = (props) => {
       .catch((error) => {
         console.error('Error:', error);
         });
+      console.log('im dashboard: ',inviteId.from_user_id);
 		  navigate(`/OnlineGame/`);
     };
 

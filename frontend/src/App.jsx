@@ -1,16 +1,16 @@
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link} from 'react-router-dom';
 import PingPongGame from './PingPongGame';
 import Tournament from './Tournament';
 import Chat from './Chat';
-import './css/App.css';
 import Login from './Login';
 import Dashboard from './Dashboard';
 import OnlineGame from './OnlineGame';
-import React, { useState, useEffect } from 'react';
 import OnlineTournament from './OnlineTournament';
 import OnlineGameM from './OnlineGameM';
-import 'bootstrap/dist/css/bootstrap.min.css';
 import OnlineGameAI from './OnlineGameAI';
+import './css/App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 function App() {
   const [notification, setNotification] = useState(null);

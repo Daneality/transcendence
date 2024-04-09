@@ -132,6 +132,7 @@ const Chat = (props) => {
 			console.error('Error:', error);
 			});
 		localStorage.setItem('friendID', friend.id);
+		console.log('im chat: ',friend.id);
 		navigate(`/OnlineGame/`);
 	  };
 
