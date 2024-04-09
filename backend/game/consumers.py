@@ -620,13 +620,13 @@ class MatchmakingConsumer(AsyncWebsocketConsumer):
                     break
 
                 if MatchmakingConsumer.players[player1Id]["upPressed"] and MatchmakingConsumer.players[player1Id]["paddleY"] > 0:
-                    MatchmakingConsumer.players[player1Id]["paddleY"] -= 10
+                    MatchmakingConsumer.players[player1Id]["paddleY"] -= 7
                 elif MatchmakingConsumer.players[player1Id]["downPressed"] and MatchmakingConsumer.players[player1Id]["paddleY"] < self.canvas_height - self.paddle_height:
-                    MatchmakingConsumer.players[player1Id]["paddleY"] += 10
+                    MatchmakingConsumer.players[player1Id]["paddleY"] += 7
                 if MatchmakingConsumer.players[player2Id]["upPressed"] and MatchmakingConsumer.players[player2Id]["paddleY"] > 0:
-                    MatchmakingConsumer.players[player2Id]["paddleY"] -= 10
+                    MatchmakingConsumer.players[player2Id]["paddleY"] -= 7
                 elif MatchmakingConsumer.players[player2Id]["downPressed"] and MatchmakingConsumer.players[player2Id]["paddleY"] < self.canvas_height - self.paddle_height:
-                    MatchmakingConsumer.players[player2Id]["paddleY"] += 10
+                    MatchmakingConsumer.players[player2Id]["paddleY"] += 7
                 if (y + dy > self.canvas_height - self.ball_radius or y + dy < self.ball_radius):
                     dy = -dy
                 if (x + dx < self.ball_radius):
@@ -747,56 +747,46 @@ class AIConsumer(AsyncWebsocketConsumer):
     bot_error = 0
     calc_y = 0
     move = False
+    scored = False
 
     async def bot_update(self):
 
         previous_y = self.y
         previous_x = self.x
-        previous_dx = 0
-        previous_dy = 0
         initial = 3
-        first_dx = 0
         first_dy = 0
         while True:
+            if (self.scored == True):
+                self.calc_y = 0
+                self.move = False
+                self.scored = False
+                initial = 3
+                previous_x = self.x
+                previous_y = self.y
+                first_dy = 0
             await asyncio.sleep(1)
             async with self.update_lock:
                 if (self.player["connected"] == False or self.player["score"] == 3 or self.bot["score"] == 3):
                     break
-                # if (dx == 0 and dy == 0):
-                #     dx = self.x - previous_x
-                #     dy = self.y - previous_y
-                # dx = self.x - previous_x if dx >= previous_dx else previous_dx
-                # dy = self.y - previous_y if dy >= previous_dy else previous_dy
-                # previous_dx = dx if dx >= previous_dx else previous_dx
-                # previous_dy = dy if dy >= previous_dy else previous_dy
                 x = self.x
                 y = self.y
                 dx = x - previous_x
                 dy = y - previous_y
                 previous_x = x
                 previous_y = y
-                print(dy, dx)
-                # previous_dx = dx
-                # previous_dy = dy
                 if dx > 0:
                     if initial == 0:
                         continue
-                    # if initial == 1:
-                    #     initial += 1
-                    #     continue
                     if initial == 2:
-                        first_dx = dx
                         first_dy = dy
                         first_x = x
                         first_y = y
                         initial += 1
                         continue
                     if initial == 3:
-                        # dx = first_dx if abs(dy) < abs(first_dy) else dx
                         dy = first_dy if abs(dy) < abs(first_dy) else dy
                         x = first_x if abs(dy) < abs(first_dy) else x
                         y = first_y if abs(dy) < abs(first_dy) else y
-                        print("BOOM ------------ ", dy, dx)
                         initial = 0
                     distance_x = self.canvas_width - x
                     time_x = distance_x / dx
@@ -809,83 +799,11 @@ class AIConsumer(AsyncWebsocketConsumer):
                             calc_y = 2 * self.canvas_height - calc_y - self.ball_radius
                             dy = -dy
                     self.calc_y = calc_y
-                    # print (self.calc_y)
                     self.move = True
-                    # # print(time_x)
-                    # while True:
-                    #     distance_y = self.canvas_height - y if dy > 0 else y
-                    #     time_y = distance_y / abs(dy)                                             
-                    #     if time_y < time_x:
-                    #         x = x + dx * time_y
-                    #         y = self.canvas_height - self.ball_radius if dy > 0 else self.ball_radius
-                    #         dy = -dy
-                    #         distance_x = self.canvas_width - x
-                    #         time_x = distance_x / dx
-                    #         continue
-                    #     else:
-                    #         y = y + dy * time_x + self.bot_error
-                    #         self.calc_y = y
-                    #         # print(self.calc_y)
-                    #         self.move = True
-                    #         # self.bot_error = self.bot_error / 2
-                    #         break
                 else:
                     self.move = False
                     initial = 2
                     pass
-                    # self.bot_error = random.uniform(-100, 100)
-                # x = self.x
-                # y = self.y
-                # dx = x - previous_x
-                # dy = y - previous_y
-                # previous_x = x
-                # previous_y = y
-                # if initial == False:
-                #     initial = True
-                # elif abs(dy) - abs(previous_dy) < previous_dy / -10:
-                #     continue
-                #     dy = -previous_dy
-                # elif abs(dx) - abs(previous_dx) < previous_dx / -10:
-                #     dx = -previous_dx
-                # print(dy, dx)
-                # previous_dx = dx
-                # previous_dy = dy
-                # if dx > 0:
-                #     distance_x = self.canvas_width - x
-                #     time_x = distance_x / dx
-                #     calc_y = y + dy * time_x
-                #     while calc_y < 0 or calc_y > self.canvas_height:
-                #         if calc_y < 0:
-                #             calc_y = -calc_y
-                #             dy = -dy
-                #         elif calc_y > self.canvas_height:
-                #             calc_y = 2 * self.canvas_height - calc_y
-                #             dy = -dy
-                #     self.calc_y = calc_y
-                #     # print (self.calc_y)
-                #     self.move = True
-                #     # # print(time_x)
-                #     # while True:
-                #     #     distance_y = self.canvas_height - y if dy > 0 else y
-                #     #     time_y = distance_y / abs(dy)                                             
-                #     #     if time_y < time_x:
-                #     #         x = x + dx * time_y
-                #     #         y = self.canvas_height - self.ball_radius if dy > 0 else self.ball_radius
-                #     #         dy = -dy
-                #     #         distance_x = self.canvas_width - x
-                #     #         time_x = distance_x / dx
-                #     #         continue
-                #     #     else:
-                #     #         y = y + dy * time_x + self.bot_error
-                #     #         self.calc_y = y
-                #     #         # print(self.calc_y)
-                #     #         self.move = True
-                #     #         # self.bot_error = self.bot_error / 2
-                #     #         break
-                # else:
-                #     self.move = False
-                #     pass
-                #     # self.bot_error = random.uniform(-100, 100)
             
     async def bot_move(self):
         asyncio.create_task(self.bot_update())
@@ -951,7 +869,7 @@ class AIConsumer(AsyncWebsocketConsumer):
                     player = None
                     bot = None
                     break
-            
+            # print(self.player["upPressed"], self.player["downPressed"])
             if self.player["upPressed"] and self.player["paddleY"] > 0:
                 self.player["paddleY"] -= 7
             elif self.player["downPressed"] and self.player["paddleY"] < self.canvas_height - self.paddle_height:
@@ -977,6 +895,7 @@ class AIConsumer(AsyncWebsocketConsumer):
                     dy = self.speed * math.cos(self.angle)
                     self.player["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                     self.bot["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                    self.scored = True
 
             elif (self.x + dx > self.canvas_width - self.ball_radius):
                 if (self.y > self.bot["paddleY"] and self.y < self.bot["paddleY"] + self.paddle_height):
@@ -993,6 +912,7 @@ class AIConsumer(AsyncWebsocketConsumer):
                     dy = self.speed * math.cos(self.angle)
                     self.player["paddleY"] = (self.canvas_height - self.paddle_height) / 2
                     self.bot["paddleY"] = (self.canvas_height - self.paddle_height) / 2
+                    self.scored = True
             self.x += dx
             self.y += dy
             await self.send(
